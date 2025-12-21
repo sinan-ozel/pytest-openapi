@@ -1,0 +1,9 @@
+services:
+  test:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile
+    image: <MODULE-NAME>-test:latest
+    command: pytest
+    working_dir: /app
+

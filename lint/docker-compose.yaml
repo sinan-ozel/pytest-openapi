@@ -1,0 +1,11 @@
+services:
+  linter:
+    build:
+      context: ${HOST_PROJECT_PATH:-.}/..
+      dockerfile: lint/Dockerfile
+    image: <MODULE-NAME>-lint:latest
+    working_dir: /workspace
+    volumes:
+      - ${HOST_PROJECT_PATH:-..}:/workspace
+    command: ./lint/lint_and_format.sh
+

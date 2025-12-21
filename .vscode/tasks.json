@@ -1,0 +1,63 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f", "${workspaceFolder}/tests/docker-compose.yaml",
+        "--project-directory", "${workspaceFolder}/tests",
+        "up",
+        "--build",
+        "--abort-on-container-exit",
+        "--exit-code-from", "test"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "lint",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f", "${workspaceFolder}/lint/docker-compose.yaml",
+        "--project-directory", "${workspaceFolder}/lint",
+        "up",
+        "--build",
+        "--abort-on-container-exit",
+        "--exit-code-from", "linter"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "validate-docs",
+      "type": "shell",
+      "command": "mkdocs",
+      "args": [
+        "build",
+        "--strict"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}
+
+

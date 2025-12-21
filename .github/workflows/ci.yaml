@@ -1,0 +1,346 @@
+name: CI/CD Pipeline
+
+env:
+  MODULE_NAME: <MODULE_NAME>
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  reformat:
+    name: Reformat Code
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.11"
+
+      - name: Install Formatting Tools
+        run: |
+          pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Run Black
+        run: |
+          black .
+
+      - name: Run docformatter
+        run: |
+          docformatter \
+            --check \
+            --recursive \
+            --wrap-summaries 72 \
+            --wrap-descriptions 72 \
+            src/
+          docformatter \
+            --in-place \
+            --recursive \
+            --wrap-summaries 72 \
+            --wrap-descriptions 72 \
+            src/
+
+      - name: Run isort
+        if: github.ref != 'refs/heads/main'
+        run: |
+          isort src/
+
+      - name: Commit changes
+        if: github.ref != 'refs/heads/main'
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git add .
+          git commit -m "Auto reformat code via workflow" || echo "No changes to commit"
+
+      - name: Push changes
+        if: github.ref != 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            git push origin HEAD:refs/heads/${{ github.head_ref }}
+          else
+            git push origin HEAD:${{ github.ref }}
+          fi
+
+  lint:
+    name: Lint the Codebase
+    runs-on: ubuntu-latest
+    needs: reformat
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies for Linting
+        run: |
+          pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Run Ruff
+        run: |
+          ruff check ./src
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: reformat
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Run Tests In Docker
+        working-directory: tests
+        run: |
+          docker-compose up --build --remove-orphans --force-recreate --abort-on-container-exit --exit-code-from test
+
+  detect_changes:
+    name: Detect if Codebase Changed
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.set_changed.outputs.changed }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch main branch
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+
+      - name: Detect changes in src/ or README
+        id: set_changed
+        run: |
+          # Check if there are any tags
+          TAG_COUNT=$(git tag | wc -l)
+          if [ "$TAG_COUNT" -eq 0 ]; then
+            echo "No tags found, assuming initial publish. Marking as changed."
+            echo "changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Find the last tag reachable from HEAD
+          LAST_TAG=$(git describe --tags --abbrev=0)
+          BASE_COMMIT=$(git rev-list -n 1 "$LAST_TAG")
+          echo "BASE_COMMIT=$BASE_COMMIT"
+          echo "Changed files since $LAST_TAG ($BASE_COMMIT):"
+          git diff --name-only $BASE_COMMIT HEAD
+          if git diff --name-only $BASE_COMMIT HEAD | grep -E '^(src/|README)' > /dev/null; then
+            echo "Detected changes in src/ or README"x
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes detected in src/ or README"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  validate_docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    outputs:
+      docs_exist: ${{ steps.validate.outputs.exists }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate documentation
+        id: validate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f "mkdocs.yml" ] && [ -d "docs" ]; then
+            echo "Documentation files found, validating..."
+
+            # Check if GitHub Pages is enabled
+            echo "Checking if GitHub Pages is enabled..."
+            if gh api repos/${{ github.repository }}/pages --silent 2>/dev/null; then
+              echo "GitHub Pages is enabled"
+            else
+              echo "::error::GitHub Pages is not enabled for this repository."
+              echo "::error::Enable it at: https://github.com/${{ github.repository }}/settings/pages"
+              exit 1
+            fi
+
+            # Build documentation
+            pip install .[docs]
+            if mkdocs build --strict; then
+              echo "Documentation built successfully"
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "Documentation build failed!"
+              exit 1
+            fi
+          else
+            echo "Documentation files not found, skipping validation"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    needs: [test, lint, detect_changes, validate_docs]
+    if: needs.detect_changes.outputs.changed == 'true' && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.event.pull_request.merged == true)  # Only run on push to main or merge to main
+    outputs:
+      is_stable: ${{ steps.set-version.outputs.is_stable }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Setup Git Authentication
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+      - name: Get The Last Git Tag
+        id: git-last-tag
+        run: |
+          # Get the last Git tag (stable version)
+          LAST_TAG=$(git describe --tags --abbrev=0 || echo "v0.1.0")
+          echo "LAST_TAG=$LAST_TAG" >> $GITHUB_ENV
+          echo "Last Git Tag: $LAST_TAG"
+
+      - name: Install Requirements
+        run: |
+          pip install --upgrade pip
+          pip install .
+          pip install .[publish]
+
+      - name: Get Current Version
+        id: get-current-version
+        run: |
+          cd ./src
+          CURRENT_VERSION=$(python -c "from $MODULE_NAME import __version__; print(__version__)")
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+          echo "Current Version: $CURRENT_VERSION"
+
+      - name: Determine Final Version
+        id: set-version
+        run: |
+          LAST_TAG_STRIPPED="${LAST_TAG#v}"
+          if ! python3 scripts/semver_compare.py "$CURRENT_VERSION" "$LAST_TAG_STRIPPED"; then
+            echo "Error: CURRENT_VERSION ($CURRENT_VERSION) is not greater than or equal to LAST_TAG ($LAST_TAG)"
+            exit 1
+          fi
+
+          TAG_COUNT=$(git tag | wc -l)
+          echo "TAG_COUNT=$TAG_COUNT"
+          if [[ "v$CURRENT_VERSION" != "$LAST_TAG" || "$TAG_COUNT" -eq 0 ]]; then
+            echo "Current version (v$CURRENT_VERSION) is greater than last tag ($LAST_TAG) or no tags exist: stable release."
+            echo "VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+            echo "is_stable=true" >> $GITHUB_OUTPUT
+          else
+            # Increment minor version for dev version
+            echo "Current version equals last tag, setting development version."
+            MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+            MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+            PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+            NEXT_PATCH=$((PATCH + 1))
+            DEV_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}.dev$(date +%Y%m%d%H%M)"
+            echo "VERSION=$DEV_VERSION" >> $GITHUB_ENV
+            echo "is_stable=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Inject Version Into __init__.py
+        if: steps.set-version.outputs.is_stable == 'false'
+        run: |
+          sed -i "s/^__version__ = .*/__version__ = \"$VERSION\"/" src/$MODULE_NAME/__init__.py
+          cat src/$MODULE_NAME/__init__.py | grep "__version__"  # Debugging check
+
+      - name: Install dependencies to build package
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI via Trusted Publisher
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      # TODO: Refactor this tagging step into its own job.
+      - name: Tag Stable Release
+        if: steps.set-version.outputs.is_stable == 'true'
+        run: |
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+
+  deploy_docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [publish, validate_docs]
+    if: github.ref == 'refs/heads/main' && needs.publish.result == 'success' && needs.publish.outputs.is_stable == 'true' && needs.validate_docs.outputs.docs_exist == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install .[docs]
+
+      - name: Build documentation
+        run: mkdocs build --strict
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

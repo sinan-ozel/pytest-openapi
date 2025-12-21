@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "<MODULE_NAME>"
+dynamic = ["version"]
+description = ""
+readme = "README.md"
+authors = [
+    { name = "", email = "" },
+]
+license = { file = "LICENSE" }
+dependencies = [
+    "art>=6.0"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",          # For running tests
+    "pytest-cov>=3.0.0",      # For test coverage reporting
+    "pytest-depends>=1.0.1",  # For test dependency management
+    "pytest-mock>=3.14.0",    # For mocking in tests
+    "httpx>=0.28.1",          # To make more complex calls, such as streaming.
+]
+
+dev = [
+    "isort>=5.12.0",          # For import sorting
+    "ruff>=0.12.11",          # For linting
+    "black>=24.0.0",          # For code formatting (Black)
+    "docformatter>=1.7.5",    # For formatting docstrings
+]
+
+docs = [
+    "mkdocs-material>=9.0.0", # Material theme for MkDocs
+    "mkdocstrings[python]>=0.24.0",  # API documentation from docstrings
+]
+
+publish = [
+    "packaging>=25.0",
+]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint.per-file-ignores]
+"**/test_*.py" = ["RUF001"]
+
+[tool.black]
+line-length = 80
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 80
+
+[tool.setuptools.dynamic]
+version = { attr = "<MODULE_NAME>.__version__" }
+
+[project.urls]
+Homepage = "https://github.com/<ORGANIZATION>/<MODULE-NAME>"
+Issues = "https://github.com/<ORGANIZATION>/<MODULE-NAME>/issues"
