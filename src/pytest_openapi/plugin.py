@@ -31,6 +31,7 @@ def pytest_configure(config):
             test_post_endpoint,
             test_put_endpoint,
             test_delete_endpoint,
+            get_test_report,
         )
         import requests
 
@@ -77,6 +78,10 @@ def pytest_configure(config):
 
                 if not success:
                     errors.append(f"  {method.upper()} {path}: {error}")
+
+        # Generate and display human-readable report
+        print("\n")
+        print(get_test_report())
 
         # Report results and exit
         if errors:
