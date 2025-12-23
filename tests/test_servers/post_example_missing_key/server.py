@@ -26,7 +26,10 @@ def openapi():
                                     "schema": {
                                         "type": "object",
                                         "properties": {
-                                            "text": {"type": "string"}
+                                            "text": {
+                                                "type": "string",
+                                                "description": "Note text"
+                                            }
                                         },
                                     },
                                     "example": {"text": "Meeting notes"},
@@ -41,8 +44,14 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"},
-                                                "text": {"type": "string"},
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "Note ID"
+                                                },
+                                                "text": {
+                                                    "type": "string",
+                                                    "description": "Note text"
+                                                },
                                             },
                                         },
                                         "example": {

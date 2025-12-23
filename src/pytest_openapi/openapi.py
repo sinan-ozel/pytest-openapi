@@ -77,6 +77,93 @@ def check_response_has_example(method, path, status_code, response_obj):
     return None
 
 
+def check_schema_descriptions(schema, path_prefix=""):
+    """
+    Recursively check that all fields in a schema have descriptions.
+
+    Args:
+        schema: OpenAPI schema object
+        path_prefix: Current path in the schema (for error messages)
+
+    Returns:
+        list: List of error messages for fields missing descriptions
+    """
+    errors = []
+
+    if not isinstance(schema, dict):
+        return errors
+
+    # Check properties
+    properties = schema.get("properties", {})
+    for prop_name, prop_schema in properties.items():
+        prop_path = f"{path_prefix}.{prop_name}" if path_prefix else prop_name
+
+        # Check if this property has a description
+        if "description" not in prop_schema:
+            errors.append(f"Field '{prop_path}' is missing a description")
+
+        # Recursively check nested objects
+        if prop_schema.get("type") == "object":
+            nested_errors = check_schema_descriptions(prop_schema, prop_path)
+            errors.extend(nested_errors)
+
+        # Check items in arrays
+        elif prop_schema.get("type") == "array":
+            items = prop_schema.get("items", {})
+            if items.get("type") == "object":
+                nested_errors = check_schema_descriptions(
+                    items, f"{prop_path}[]"
+                )
+                errors.extend(nested_errors)
+
+    return errors
+
+
+def check_endpoint_schema_descriptions(method, path, operation):
+    """
+    Check that all schema fields have descriptions for an endpoint.
+
+    Args:
+        method: HTTP method (get, post, put, delete)
+        path: API endpoint path
+        operation: OpenAPI operation object
+
+    Returns:
+        list: List of error messages for missing descriptions
+    """
+    errors = []
+
+    # Check request body schema
+    if method in ["post", "put", "delete"]:
+        request_body = operation.get("requestBody", {})
+        content = request_body.get("content", {})
+
+        for media_type, media_obj in content.items():
+            schema = media_obj.get("schema", {})
+            if schema:
+                schema_errors = check_schema_descriptions(schema)
+                for error in schema_errors:
+                    errors.append(
+                        f"  - {method.upper()} {path} request body: {error}"
+                    )
+
+    # Check response schemas
+    responses = operation.get("responses", {})
+    for status_code, response_obj in responses.items():
+        content = response_obj.get("content", {})
+
+        for media_type, media_obj in content.items():
+            schema = media_obj.get("schema", {})
+            if schema:
+                schema_errors = check_schema_descriptions(schema)
+                for error in schema_errors:
+                    errors.append(
+                        f"  - {method.upper()} {path} response {status_code}: {error}"
+                    )
+
+    return errors
+
+
 def validate_openapi_spec(base_url):
     """
     Validate that the OpenAPI spec is available and meets requirements.
@@ -144,6 +231,12 @@ def validate_openapi_spec(base_url):
                 )
                 if error:
                     errors.append(error)
+
+            # Check schema field descriptions
+            description_errors = check_endpoint_schema_descriptions(
+                method, path, operation
+            )
+            errors.extend(description_errors)
 
     # Report errors
     if errors:

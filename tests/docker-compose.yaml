@@ -87,6 +87,22 @@ services:
     ports:
       - "8011:8000"
 
+  mock-server-nested-valid-api:
+    build:
+      context: test_servers/nested_valid_api
+      dockerfile: Dockerfile
+    image: mock-server-nested-valid-api:latest
+    ports:
+      - "8012:8000"
+
+  mock-server-missing-descriptions:
+    build:
+      context: test_servers/missing_descriptions
+      dockerfile: Dockerfile
+    image: mock-server-missing-descriptions:latest
+    ports:
+      - "8013:8000"
+
   test:
     build:
       context: ..
@@ -106,4 +122,6 @@ services:
       - mock-server-post-response-wrong-type
       - mock-server-put-response-missing-key
       - mock-server-delete-wrong-status
+      - mock-server-nested-valid-api
+      - mock-server-missing-descriptions
 

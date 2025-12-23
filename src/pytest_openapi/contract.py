@@ -36,7 +36,17 @@ def make_request(method, url, json=None, timeout=10):
     return response
 
 
-def log_test_result(method, path, request_body, expected_status, expected_body, actual_status, actual_body, success, error_message=None):
+def log_test_result(
+    method,
+    path,
+    request_body,
+    expected_status,
+    expected_body,
+    actual_status,
+    actual_body,
+    success,
+    error_message=None,
+):
     """
     Log a test result for the final report.
 
@@ -60,7 +70,7 @@ def log_test_result(method, path, request_body, expected_status, expected_body, 
         "actual_status": actual_status,
         "actual_body": actual_body,
         "success": success,
-        "error_message": error_message
+        "error_message": error_message,
     }
     test_reports.append(report)
 
@@ -89,7 +99,7 @@ def get_test_report():
         if test["request_body"] is not None:
             formatted_request = json.dumps(test["request_body"], indent=2)
             report_lines.append(f"Requested:")
-            for line in formatted_request.split('\n'):
+            for line in formatted_request.split("\n"):
                 report_lines.append(f"  {line}")
 
         report_lines.append("")
@@ -100,7 +110,7 @@ def get_test_report():
         else:
             try:
                 expected_body_str = json.dumps(test["expected_body"], indent=2)
-                expected_body_str = "\n  ".join(expected_body_str.split('\n'))
+                expected_body_str = "\n  ".join(expected_body_str.split("\n"))
             except (TypeError, ValueError):
                 expected_body_str = str(test["expected_body"])
 
@@ -110,7 +120,7 @@ def get_test_report():
         else:
             try:
                 actual_body_str = json.dumps(test["actual_body"], indent=2)
-                actual_body_str = "\n  ".join(actual_body_str.split('\n'))
+                actual_body_str = "\n  ".join(actual_body_str.split("\n"))
             except (TypeError, ValueError):
                 actual_body_str = str(test["actual_body"])
 
@@ -218,24 +228,65 @@ def test_get_endpoint(base_url, path, operation):
         response = make_request("GET", url)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
-        log_test_result("GET", path, None, 200, expected_response, None, None, False, error_msg)
+        log_test_result(
+            "GET",
+            path,
+            None,
+            200,
+            expected_response,
+            None,
+            None,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
     # Check status code
-    actual_response = response.json() if response.status_code == 200 else response.text
+    actual_response = (
+        response.json() if response.status_code == 200 else response.text
+    )
 
     if response.status_code != 200:
         error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
-        log_test_result("GET", path, None, 200, expected_response, response.status_code, actual_response, False, error_msg)
+        log_test_result(
+            "GET",
+            path,
+            None,
+            200,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
     # Check response matches example
     matches, error = compare_responses(expected_response, actual_response)
     if not matches:
-        log_test_result("GET", path, None, 200, expected_response, response.status_code, actual_response, False, error)
+        log_test_result(
+            "GET",
+            path,
+            None,
+            200,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error,
+        )
         return False, error
 
-    log_test_result("GET", path, None, 200, expected_response, response.status_code, actual_response, True)
+    log_test_result(
+        "GET",
+        path,
+        None,
+        200,
+        expected_response,
+        response.status_code,
+        actual_response,
+        True,
+    )
     return True, None
 
 
@@ -286,24 +337,65 @@ def test_post_endpoint(base_url, path, operation):
         response = make_request("POST", url, json=request_example)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
-        log_test_result("POST", path, request_example, expected_status, expected_response, None, None, False, error_msg)
+        log_test_result(
+            "POST",
+            path,
+            request_example,
+            expected_status,
+            expected_response,
+            None,
+            None,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
     # Check status code (accept both 200 and 201 for POST)
-    actual_response = response.json() if response.status_code in [200, 201] else response.text
+    actual_response = (
+        response.json() if response.status_code in [200, 201] else response.text
+    )
 
     if response.status_code not in [200, 201]:
         error_msg = f"Expected status 200/201, got {response.status_code}. Response: {response.text}"
-        log_test_result("POST", path, request_example, expected_status, expected_response, response.status_code, actual_response, False, error_msg)
+        log_test_result(
+            "POST",
+            path,
+            request_example,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
     # Check response matches example
     matches, error = compare_responses(expected_response, actual_response)
     if not matches:
-        log_test_result("POST", path, request_example, expected_status, expected_response, response.status_code, actual_response, False, error)
+        log_test_result(
+            "POST",
+            path,
+            request_example,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error,
+        )
         return False, error
 
-    log_test_result("POST", path, request_example, expected_status, expected_response, response.status_code, actual_response, True)
+    log_test_result(
+        "POST",
+        path,
+        request_example,
+        expected_status,
+        expected_response,
+        response.status_code,
+        actual_response,
+        True,
+    )
     return True, None
 
 
@@ -375,31 +467,74 @@ def test_put_endpoint(base_url, path, operation):
                 value = 1
 
             url = url.replace(f"{{{param_name}}}", str(value))
-            resolved_path = resolved_path.replace(f"{{{param_name}}}", str(value))
+            resolved_path = resolved_path.replace(
+                f"{{{param_name}}}", str(value)
+            )
 
     # Make the PUT request
     try:
         response = make_request("PUT", url, json=request_example)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
-        log_test_result("PUT", resolved_path, request_example, 200, expected_response, None, None, False, error_msg)
+        log_test_result(
+            "PUT",
+            resolved_path,
+            request_example,
+            200,
+            expected_response,
+            None,
+            None,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
     # Check status code
-    actual_response = response.json() if response.status_code == 200 else response.text
+    actual_response = (
+        response.json() if response.status_code == 200 else response.text
+    )
 
     if response.status_code != 200:
         error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
-        log_test_result("PUT", resolved_path, request_example, 200, expected_response, response.status_code, actual_response, False, error_msg)
+        log_test_result(
+            "PUT",
+            resolved_path,
+            request_example,
+            200,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
     # Check response matches example
     matches, error = compare_responses(expected_response, actual_response)
     if not matches:
-        log_test_result("PUT", resolved_path, request_example, 200, expected_response, response.status_code, actual_response, False, error)
+        log_test_result(
+            "PUT",
+            resolved_path,
+            request_example,
+            200,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error,
+        )
         return False, error
 
-    log_test_result("PUT", resolved_path, request_example, 200, expected_response, response.status_code, actual_response, True)
+    log_test_result(
+        "PUT",
+        resolved_path,
+        request_example,
+        200,
+        expected_response,
+        response.status_code,
+        actual_response,
+        True,
+    )
     return True, None
 
 
@@ -473,14 +608,26 @@ def test_delete_endpoint(base_url, path, operation):
                 param_value = 1
 
             url = url.replace(f"{{{param_name}}}", str(param_value))
-            resolved_path = resolved_path.replace(f"{{{param_name}}}", str(param_value))
+            resolved_path = resolved_path.replace(
+                f"{{{param_name}}}", str(param_value)
+            )
 
     # Make the DELETE request
     try:
         response = make_request("DELETE", url)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
-        log_test_result("DELETE", resolved_path, None, expected_status, expected_body, None, None, False, error_msg)
+        log_test_result(
+            "DELETE",
+            resolved_path,
+            None,
+            expected_status,
+            expected_body,
+            None,
+            None,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
     # Check status code (accept 200 or 204 for successful DELETE)
@@ -493,8 +640,27 @@ def test_delete_endpoint(base_url, path, operation):
 
     if response.status_code not in [200, 204]:
         error_msg = f"Expected status 200/204, got {response.status_code}. Response: {response.text}"
-        log_test_result("DELETE", resolved_path, None, expected_status, expected_body, response.status_code, actual_response, False, error_msg)
+        log_test_result(
+            "DELETE",
+            resolved_path,
+            None,
+            expected_status,
+            expected_body,
+            response.status_code,
+            actual_response,
+            False,
+            error_msg,
+        )
         return False, error_msg
 
-    log_test_result("DELETE", resolved_path, None, expected_status, expected_body, response.status_code, actual_response, True)
+    log_test_result(
+        "DELETE",
+        resolved_path,
+        None,
+        expected_status,
+        expected_body,
+        response.status_code,
+        actual_response,
+        True,
+    )
     return True, None

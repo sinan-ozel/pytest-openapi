@@ -31,7 +31,10 @@ def openapi():
                                     "schema": {
                                         "type": "object",
                                         "properties": {
-                                            "name": {"type": "string"}
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Item name"
+                                            }
                                         },
                                     },
                                     "example": {"name": "Updated Item"},
@@ -46,9 +49,18 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"},
-                                                "name": {"type": "string"},
-                                                "updated": {"type": "boolean"},
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "Item ID"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "Item name"
+                                                },
+                                                "updated": {
+                                                    "type": "boolean",
+                                                    "description": "Update status"
+                                                },
                                             },
                                         },
                                         "example": {

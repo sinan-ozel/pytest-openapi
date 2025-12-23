@@ -24,9 +24,18 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"},
-                                                "name": {"type": "string"},
-                                                "price": {"type": "number"},
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "Product ID"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "Product name"
+                                                },
+                                                "price": {
+                                                    "type": "number",
+                                                    "description": "Product price"
+                                                },
                                             },
                                         },
                                         "example": {

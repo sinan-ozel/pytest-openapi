@@ -26,7 +26,10 @@ def openapi():
                                     "schema": {
                                         "type": "object",
                                         "properties": {
-                                            "title": {"type": "string"}
+                                            "title": {
+                                                "type": "string",
+                                                "description": "Task title"
+                                            }
                                         },
                                     },
                                     "example": {"title": "Do laundry"},
@@ -41,9 +44,18 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"},
-                                                "title": {"type": "string"},
-                                                "status": {"type": "string"},
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "Task ID"
+                                                },
+                                                "title": {
+                                                    "type": "string",
+                                                    "description": "Task title"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "description": "Task status"
+                                                },
                                             },
                                         },
                                         "example": {

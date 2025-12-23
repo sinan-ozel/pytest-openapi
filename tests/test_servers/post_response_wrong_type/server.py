@@ -26,7 +26,10 @@ def openapi():
                                     "schema": {
                                         "type": "object",
                                         "properties": {
-                                            "text": {"type": "string"}
+                                            "text": {
+                                                "type": "string",
+                                                "description": "Comment text"
+                                            }
                                         },
                                     },
                                     "example": {"text": "Great post!"},
@@ -41,8 +44,14 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"},
-                                                "text": {"type": "string"},
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "Comment ID"
+                                                },
+                                                "text": {
+                                                    "type": "string",
+                                                    "description": "Comment text"
+                                                },
                                             },
                                         },
                                         "example": {

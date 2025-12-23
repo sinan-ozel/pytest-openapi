@@ -38,10 +38,17 @@ def openapi():
                                                     "email",
                                                 ],
                                                 "properties": {
-                                                    "id": {"type": "integer"},
-                                                    "name": {"type": "string"},
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "description": "User ID"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "description": "User name"
+                                                    },
                                                     "email": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "description": "User email"
                                                     },
                                                 },
                                             },
@@ -73,8 +80,14 @@ def openapi():
                                         "type": "object",
                                         "required": ["name", "email"],
                                         "properties": {
-                                            "name": {"type": "string"},
-                                            "email": {"type": "string"},
+                                            "name": {
+                                                "type": "string",
+                                                "description": "User name"
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "description": "User email"
+                                            },
                                         },
                                     },
                                     "example": {
@@ -92,9 +105,18 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"},
-                                                "name": {"type": "string"},
-                                                "email": {"type": "string"},
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "User ID"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "User name"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "description": "User email"
+                                                },
                                             },
                                         },
                                         "example": {
@@ -112,7 +134,10 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "error": {"type": "string"}
+                                                "error": {
+                                                    "type": "string",
+                                                    "description": "Error message"
+                                                }
                                             },
                                         },
                                         "example": {
@@ -142,8 +167,14 @@ def openapi():
                                     "schema": {
                                         "type": "object",
                                         "properties": {
-                                            "name": {"type": "string"},
-                                            "email": {"type": "string"},
+                                            "name": {
+                                                "type": "string",
+                                                "description": "User name"
+                                            },
+                                            "email": {
+                                                "type": "string",
+                                                "description": "User email"
+                                            },
                                         },
                                     },
                                     "example": {
@@ -161,9 +192,18 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"},
-                                                "name": {"type": "string"},
-                                                "email": {"type": "string"},
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "User ID"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "User name"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "description": "User email"
+                                                },
                                             },
                                         },
                                         "example": {
@@ -181,7 +221,10 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "error": {"type": "string"}
+                                                "error": {
+                                                    "type": "string",
+                                                    "description": "Error message"
+                                                }
                                             },
                                         },
                                         "example": {
@@ -213,7 +256,10 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "error": {"type": "string"}
+                                                "error": {
+                                                    "type": "string",
+                                                    "description": "Error message"
+                                                }
                                             },
                                         },
                                         "example": {

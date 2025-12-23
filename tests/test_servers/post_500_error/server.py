@@ -23,7 +23,10 @@ def openapi():
                                     "schema": {
                                         "type": "object",
                                         "properties": {
-                                            "item": {"type": "string"}
+                                            "item": {
+                                                "type": "string",
+                                                "description": "Item name"
+                                            }
                                         },
                                     },
                                     "example": {"item": "Widget"},
@@ -38,7 +41,10 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer"}
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "Order ID"
+                                                }
                                             },
                                         },
                                         "example": {"id": 1},
