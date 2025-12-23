@@ -1,11 +1,11 @@
 services:
   linter:
     build:
-      context: ${HOST_PROJECT_PATH:-.}/..
+      context: ..
       dockerfile: lint/Dockerfile
-    image: <MODULE-NAME>-lint:latest
+    image: pytest-openapi-lint:latest
     working_dir: /workspace
     volumes:
-      - ${HOST_PROJECT_PATH:-..}:/workspace
+      - ../:/workspace
     command: ./lint/lint_and_format.sh
 

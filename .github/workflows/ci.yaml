@@ -1,7 +1,7 @@
 name: CI/CD Pipeline
 
 env:
-  MODULE_NAME: <MODULE_NAME>
+  MODULE_NAME: pytest_openapi
 on:
   push:
     branches:

@@ -3,16 +3,17 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "<MODULE_NAME>"
+name = "pytest-openapi"
 dynamic = ["version"]
 description = ""
 readme = "README.md"
 authors = [
-    { name = "", email = "" },
+    { name = "Sinan Ozel", email = "coding@sinan.slmail.me" },
 ]
 license = { file = "LICENSE" }
 dependencies = [
-    "art>=6.0"
+    "pytest>=7.0.0",
+    "requests>=2.31.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -60,8 +61,11 @@ profile = "black"
 line_length = 80
 
 [tool.setuptools.dynamic]
-version = { attr = "<MODULE_NAME>.__version__" }
+version = { attr = "pytest_openapi.__version__" }
 
 [project.urls]
-Homepage = "https://github.com/<ORGANIZATION>/<MODULE-NAME>"
-Issues = "https://github.com/<ORGANIZATION>/<MODULE-NAME>/issues"
+Homepage = "https://github.com/sinan-ozel/pytest-openapi"
+Issues = "https://github.com/sinan-ozel/pytest-openapi/issues"
+
+[project.entry-points.pytest11]
+pytest_openapi = "pytest_openapi.plugin"

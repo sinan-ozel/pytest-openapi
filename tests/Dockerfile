@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Copy pyproject.toml from the parent directory
 COPY pyproject.toml .
-COPY src/<MODULE_NAME> ./<MODULE_NAME>
+COPY src/pytest_openapi ./pytest_openapi
+COPY tests ./tests
 
 RUN pip install --upgrade pip
 RUN pip install .           # Install main project dependencies

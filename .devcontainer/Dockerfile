@@ -3,9 +3,19 @@ FROM python:3.11-slim
 WORKDIR /workspace
 
 # Install system dependencies
-RUN apt-get update && \
-    apt-get install -y build-essential git vim && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    tree \
+    apt-transport-https \
+    wget \
+    gnupg \
+    lsb-release \
+    sudo
+
 
 COPY pyproject.toml .
 COPY src/ ./src/

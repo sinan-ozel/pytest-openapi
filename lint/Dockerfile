@@ -4,7 +4,7 @@ WORKDIR /workspace
 
 # Copy only pyproject.toml to install dependencies
 COPY pyproject.toml /tmp/pyproject.toml
-COPY src/<MODULE_NAME>/__init__.py /tmp/src/<MODULE_NAME>/__init__.py
+COPY src/pytest_openapi/__init__.py /tmp/src/pytest_openapi/__init__.py
 
 RUN pip install --upgrade pip && \
     cd /tmp && \
