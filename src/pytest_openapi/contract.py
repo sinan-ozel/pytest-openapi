@@ -1,16 +1,18 @@
 """OpenAPI contract testing - execute tests against live endpoints."""
 
 import json
+
 import requests
 
+from .case_generator import generate_test_cases_for_schema
 
 # Global list to store test reports
 test_reports = []
 
 
 def make_request(method, url, json=None, timeout=10):
-    """
-    Wrapper for HTTP requests that logs all requests and responses for reporting.
+    """Wrapper for HTTP requests that logs all requests and responses
+    for reporting.
 
     Args:
         method: HTTP method (GET, POST, PUT, DELETE)
@@ -47,8 +49,7 @@ def log_test_result(
     success,
     error_message=None,
 ):
-    """
-    Log a test result for the final report.
+    """Log a test result for the final report.
 
     Args:
         method: HTTP method (GET, POST, PUT, DELETE)
@@ -76,8 +77,7 @@ def log_test_result(
 
 
 def get_test_report():
-    """
-    Generate a human-readable test report.
+    """Generate a human-readable test report.
 
     Returns:
         str: Formatted report of all tests
@@ -98,7 +98,7 @@ def get_test_report():
 
         if test["request_body"] is not None:
             formatted_request = json.dumps(test["request_body"], indent=2)
-            report_lines.append(f"Requested:")
+            report_lines.append("Requested:")
             for line in formatted_request.split("\n"):
                 report_lines.append(f"  {line}")
 
@@ -142,8 +142,8 @@ def get_test_report():
 
 
 def compare_responses(expected, actual):
-    """
-    Compare expected and actual responses with detailed error messages.
+    """Compare expected and actual responses with detailed error
+    messages.
 
     Args:
         expected: Expected response (from OpenAPI example)
@@ -196,8 +196,7 @@ def compare_responses(expected, actual):
 
 
 def test_get_endpoint(base_url, path, operation):
-    """
-    Test a GET endpoint using the example from the OpenAPI spec.
+    """Test a GET endpoint using the example from the OpenAPI spec.
 
     Args:
         base_url: Base URL of the API server
@@ -209,7 +208,7 @@ def test_get_endpoint(base_url, path, operation):
     """
     url = f"{base_url}{path}"
 
-    # Get the expected response example for 200 status
+    # Get the expected response from examples or generate from schema
     responses = operation.get("responses", {})
     response_200 = responses.get("200", {})
     content = response_200.get("content", {})
@@ -219,9 +218,28 @@ def test_get_endpoint(base_url, path, operation):
         if "example" in media_obj:
             expected_response = media_obj["example"]
             break
+        elif "examples" in media_obj:
+            examples = media_obj["examples"]
+            if examples:
+                first_example = next(iter(examples.values()))
+                expected_response = first_example.get("value")
+                break
+        elif "schema" in media_obj:
+            # Generate test cases from schema
+            schema = media_obj["schema"]
+            response_test_cases, warnings = generate_test_cases_for_schema(
+                schema
+            )
+            if warnings:
+                print(f"\nWarning for GET {path} response schema:")
+                for warning in warnings:
+                    print(f"  - {warning}")
+            if response_test_cases:
+                expected_response = response_test_cases[0]
+                break
 
     if expected_response is None:
-        return False, "No example found for 200 response"
+        return False, "No example or schema found for 200 response"
 
     # Make the GET request
     try:
@@ -291,8 +309,8 @@ def test_get_endpoint(base_url, path, operation):
 
 
 def test_post_endpoint(base_url, path, operation):
-    """
-    Test a POST endpoint using the example from the OpenAPI spec.
+    """Test a POST endpoint using examples from OpenAPI spec AND
+    generated test cases from schema.
 
     Args:
         base_url: Base URL of the API server
@@ -304,43 +322,93 @@ def test_post_endpoint(base_url, path, operation):
     """
     url = f"{base_url}{path}"
 
-    # Get the request body example
+    # Collect ALL test cases: both from examples AND generated from schema
+    request_test_cases = []
+    warnings = []
+
     request_body = operation.get("requestBody", {})
     request_content = request_body.get("content", {})
 
-    request_example = None
     for media_type, media_obj in request_content.items():
+        # Collect explicit examples
         if "example" in media_obj:
-            request_example = media_obj["example"]
-            break
+            request_test_cases.append(media_obj["example"])
+        if "examples" in media_obj:
+            examples_dict = media_obj["examples"]
+            for ex_name, ex_obj in examples_dict.items():
+                if "value" in ex_obj:
+                    request_test_cases.append(ex_obj["value"])
 
-    if request_example is None:
-        return False, "No request body example found"
+        # Also generate test cases from schema
+        if "schema" in media_obj:
+            schema = media_obj["schema"]
+            generated, warning = generate_test_cases_for_schema(
+                schema, "request_body"
+            )
+            if warning:
+                if isinstance(warning, list):
+                    warnings.extend(warning)
+                else:
+                    warnings.append(warning)
+            request_test_cases.extend(generated)
+        break
 
-    # Get the expected response example for 200 status
+    if not request_test_cases:
+        return False, "No request body examples or schema found"
+
+    # Print warnings if any
+    for warning in warnings:
+        print(f"\n{warning}")
+
+    # Get expected response - collect examples AND generated test cases
     responses = operation.get("responses", {})
     response_200 = responses.get("200", {}) or responses.get("201", {})
     content = response_200.get("content", {})
 
     expected_response = None
     expected_status = 201 if "201" in responses else 200
+
     for media_type, media_obj in content.items():
+        # Prefer explicit example
         if "example" in media_obj:
             expected_response = media_obj["example"]
             break
+        elif "examples" in media_obj:
+            examples_dict = media_obj["examples"]
+            if examples_dict:
+                first_example = next(iter(examples_dict.values()))
+                expected_response = first_example.get("value")
+                break
+        elif "schema" in media_obj:
+            # Generate test case from response schema
+            schema = media_obj["schema"]
+            generated, warning = generate_test_cases_for_schema(
+                schema, "response_body"
+            )
+            if warning:
+                if isinstance(warning, list):
+                    warnings.extend(warning)
+                else:
+                    warnings.append(warning)
+            if generated:
+                expected_response = generated[0]
+            break
 
     if expected_response is None:
-        return False, "No example found for 200/201 response"
+        return False, "No example or schema found for 200/201 response"
+
+    # Test with the first test case (we can expand this to test all later)
+    request_test_case = request_test_cases[0]
 
     # Make the POST request
     try:
-        response = make_request("POST", url, json=request_example)
+        response = make_request("POST", url, json=request_test_case)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
         log_test_result(
             "POST",
             path,
-            request_example,
+            request_test_case,
             expected_status,
             expected_response,
             None,
@@ -360,7 +428,7 @@ def test_post_endpoint(base_url, path, operation):
         log_test_result(
             "POST",
             path,
-            request_example,
+            request_test_case,
             expected_status,
             expected_response,
             response.status_code,
@@ -376,7 +444,7 @@ def test_post_endpoint(base_url, path, operation):
         log_test_result(
             "POST",
             path,
-            request_example,
+            request_test_case,
             expected_status,
             expected_response,
             response.status_code,
@@ -389,7 +457,7 @@ def test_post_endpoint(base_url, path, operation):
     log_test_result(
         "POST",
         path,
-        request_example,
+        request_test_case,
         expected_status,
         expected_response,
         response.status_code,
@@ -400,8 +468,7 @@ def test_post_endpoint(base_url, path, operation):
 
 
 def test_put_endpoint(base_url, path, operation):
-    """
-    Test a PUT endpoint using the example from the OpenAPI spec.
+    """Test a PUT endpoint using the example from the OpenAPI spec.
 
     Args:
         base_url: Base URL of the API server
@@ -411,20 +478,43 @@ def test_put_endpoint(base_url, path, operation):
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
-    # Get the request body example
+    # Collect ALL test cases: both from examples AND generated from schema
+    request_test_cases = []
+    warnings = []
+
     request_body = operation.get("requestBody", {})
     request_content = request_body.get("content", {})
 
-    request_example = None
     for media_type, media_obj in request_content.items():
+        # Collect explicit examples
         if "example" in media_obj:
-            request_example = media_obj["example"]
-            break
+            request_test_cases.append(media_obj["example"])
+        if "examples" in media_obj:
+            examples_dict = media_obj["examples"]
+            for ex_name, ex_obj in examples_dict.items():
+                if "value" in ex_obj:
+                    request_test_cases.append(ex_obj["value"])
 
-    if request_example is None:
-        return False, "No request body example found"
+        # Also generate test cases from schema
+        if "schema" in media_obj:
+            schema = media_obj["schema"]
+            generated, warning = generate_test_cases_for_schema(schema)
+            if warning:
+                if isinstance(warning, list):
+                    warnings.extend(warning)
+                else:
+                    warnings.append(warning)
+            request_test_cases.extend(generated)
+        break
 
-    # Get the expected response example for 200 status
+    if not request_test_cases:
+        return False, "No request body examples or schema found"
+
+    # Print warnings if any
+    for warning in warnings:
+        print(f"\n{warning}")
+
+    # Get the expected response from examples or generate from schema
     responses = operation.get("responses", {})
     response_200 = responses.get("200", {})
     content = response_200.get("content", {})
@@ -434,18 +524,39 @@ def test_put_endpoint(base_url, path, operation):
         if "example" in media_obj:
             expected_response = media_obj["example"]
             break
+        elif "examples" in media_obj:
+            examples = media_obj["examples"]
+            if examples:
+                first_example = next(iter(examples.values()))
+                expected_response = first_example.get("value")
+                break
+        elif "schema" in media_obj:
+            # Generate test cases from schema
+            schema = media_obj["schema"]
+            response_test_cases, warning = generate_test_cases_for_schema(
+                schema
+            )
+            if warning:
+                if isinstance(warning, list):
+                    for w in warning:
+                        print(f"\n{w}")
+                else:
+                    print(f"\n{warning}")
+            if response_test_cases:
+                expected_response = response_test_cases[0]
+                break
 
     if expected_response is None:
-        return False, "No example found for 200 response"
+        return False, "No example or schema found for 200 response"
+
+    # Use the first test case for testing
+    request_test_case = request_test_cases[0]
 
     # Replace path parameters with values from the response example
     url = f"{base_url}{path}"
     resolved_path = path
     if "{" in path:
         import re
-
-        # Get path parameters from operation definition
-        parameters = operation.get("parameters", [])
 
         for match in re.finditer(r"\{(\w+)\}", path):
             param_name = match.group(1)
@@ -473,13 +584,13 @@ def test_put_endpoint(base_url, path, operation):
 
     # Make the PUT request
     try:
-        response = make_request("PUT", url, json=request_example)
+        response = make_request("PUT", url, json=request_test_case)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
         log_test_result(
             "PUT",
             resolved_path,
-            request_example,
+            request_test_case,
             200,
             expected_response,
             None,
@@ -499,7 +610,7 @@ def test_put_endpoint(base_url, path, operation):
         log_test_result(
             "PUT",
             resolved_path,
-            request_example,
+            request_test_case,
             200,
             expected_response,
             response.status_code,
@@ -515,7 +626,7 @@ def test_put_endpoint(base_url, path, operation):
         log_test_result(
             "PUT",
             resolved_path,
-            request_example,
+            request_test_case,
             200,
             expected_response,
             response.status_code,
@@ -528,7 +639,7 @@ def test_put_endpoint(base_url, path, operation):
     log_test_result(
         "PUT",
         resolved_path,
-        request_example,
+        request_test_case,
         200,
         expected_response,
         response.status_code,
@@ -539,8 +650,7 @@ def test_put_endpoint(base_url, path, operation):
 
 
 def test_delete_endpoint(base_url, path, operation):
-    """
-    Test a DELETE endpoint using the example from the OpenAPI spec.
+    """Test a DELETE endpoint using the example from the OpenAPI spec.
 
     Args:
         base_url: Base URL of the API server
@@ -550,8 +660,7 @@ def test_delete_endpoint(base_url, path, operation):
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
-    # For DELETE, we need to get path parameters from the 200 response example
-    # (if it exists) or from a 404 response example
+    # For DELETE, we need to get path parameters from the 200/204 response example or schema
     responses = operation.get("responses", {})
 
     # Try to find an example with path parameters
@@ -569,6 +678,29 @@ def test_delete_endpoint(base_url, path, operation):
                 response_example = media_obj["example"]
                 expected_body = response_example
                 break
+            elif "examples" in media_obj:
+                examples = media_obj["examples"]
+                if examples:
+                    first_example = next(iter(examples.values()))
+                    response_example = first_example.get("value")
+                    expected_body = response_example
+                    break
+            elif "schema" in media_obj:
+                # Generate test cases from schema
+                schema = media_obj["schema"]
+                response_test_cases, warning = generate_test_cases_for_schema(
+                    schema
+                )
+                if warning:
+                    if isinstance(warning, list):
+                        for w in warning:
+                            print(f"\n{w}")
+                    else:
+                        print(f"\n{warning}")
+                if response_test_cases:
+                    response_example = response_test_cases[0]
+                    expected_body = response_example
+                    break
         if response_example:
             break
 
@@ -635,7 +767,7 @@ def test_delete_endpoint(base_url, path, operation):
     if response.status_code == 200 and response.text:
         try:
             actual_response = response.json()
-        except:
+        except Exception:
             actual_response = response.text
 
     if response.status_code not in [200, 204]:

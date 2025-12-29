@@ -1,12 +1,13 @@
 """OpenAPI specification validation and parsing."""
 
 import sys
+
 import requests
 
 
 def check_request_body_has_example(method, path, operation):
-    """
-    Check if a POST/PUT/DELETE operation has a request body example.
+    """Check if a POST/PUT/DELETE operation has a request body example
+    or schema.
 
     Args:
         method: HTTP method (post, put, delete)
@@ -14,26 +15,29 @@ def check_request_body_has_example(method, path, operation):
         operation: OpenAPI operation object
 
     Returns:
-        str or None: Error message if example is missing, None otherwise
+        str or None: Error message if example AND schema are missing, None otherwise
     """
     request_body = operation.get("requestBody", {})
     content = request_body.get("content", {})
 
-    has_example = False
+    has_example_or_schema = False
     for media_type, media_obj in content.items():
-        if "example" in media_obj or "examples" in media_obj:
-            has_example = True
+        if (
+            "example" in media_obj
+            or "examples" in media_obj
+            or "schema" in media_obj
+        ):
+            has_example_or_schema = True
             break
 
-    if content and not has_example:
-        return f"  - {method.upper()} {path}: Missing request body example"
+    if content and not has_example_or_schema:
+        return f"  - {method.upper()} {path}: Missing request body example or schema"
 
     return None
 
 
 def check_operation_has_responses(method, path, operation):
-    """
-    Check if an operation has response definitions.
+    """Check if an operation has response definitions.
 
     Args:
         method: HTTP method (get, post, put, delete)
@@ -51,8 +55,7 @@ def check_operation_has_responses(method, path, operation):
 
 
 def check_response_has_example(method, path, status_code, response_obj):
-    """
-    Check if a response definition has an example.
+    """Check if a response definition has an example or schema.
 
     Args:
         method: HTTP method (get, post, put, delete)
@@ -61,25 +64,28 @@ def check_response_has_example(method, path, status_code, response_obj):
         response_obj: OpenAPI response object
 
     Returns:
-        str or None: Error message if example is missing, None otherwise
+        str or None: Error message if example AND schema are missing, None otherwise
     """
     content = response_obj.get("content", {})
 
-    has_example = False
+    has_example_or_schema = False
     for media_type, media_obj in content.items():
-        if "example" in media_obj or "examples" in media_obj:
-            has_example = True
+        if (
+            "example" in media_obj
+            or "examples" in media_obj
+            or "schema" in media_obj
+        ):
+            has_example_or_schema = True
             break
 
-    if content and not has_example:
-        return f"  - {method.upper()} {path}: Missing response example for status {status_code}"
+    if content and not has_example_or_schema:
+        return f"  - {method.upper()} {path}: Missing response example or schema for status {status_code}"
 
     return None
 
 
 def check_schema_descriptions(schema, path_prefix=""):
-    """
-    Recursively check that all fields in a schema have descriptions.
+    """Recursively check that all fields in a schema have descriptions.
 
     Args:
         schema: OpenAPI schema object
@@ -120,8 +126,7 @@ def check_schema_descriptions(schema, path_prefix=""):
 
 
 def check_endpoint_schema_descriptions(method, path, operation):
-    """
-    Check that all schema fields have descriptions for an endpoint.
+    """Check that all schema fields have descriptions for an endpoint.
 
     Args:
         method: HTTP method (get, post, put, delete)
@@ -165,8 +170,8 @@ def check_endpoint_schema_descriptions(method, path, operation):
 
 
 def validate_openapi_spec(base_url):
-    """
-    Validate that the OpenAPI spec is available and meets requirements.
+    """Validate that the OpenAPI spec is available and meets
+    requirements.
 
     Checks:
     1. /openapi.json endpoint is accessible
@@ -198,7 +203,7 @@ def validate_openapi_spec(base_url):
 
     # Validate the spec structure
     if "paths" not in spec:
-        print(f"\n❌ ERROR: OpenAPI spec missing 'paths' key")
+        print("\n❌ ERROR: OpenAPI spec missing 'paths' key")
         sys.exit(1)
 
     # Check 2 & 3: Validate endpoints
@@ -240,12 +245,13 @@ def validate_openapi_spec(base_url):
 
     # Report errors
     if errors:
-        print(f"\n❌ ERROR: OpenAPI spec validation failed")
-        print(f"\nThe following endpoints are missing required examples:")
+        print("\n❌ ERROR: OpenAPI spec validation failed")
+        print("\nThe following endpoints have validation errors:")
         for error in errors:
             print(error)
         print(
-            f"\npytest-openapi requires examples for all endpoints to generate tests."
+            "\npytest-openapi requires proper schemas with descriptions for all fields, "
+            "and either examples or complete schemas for all endpoints."
         )
         sys.exit(1)
 

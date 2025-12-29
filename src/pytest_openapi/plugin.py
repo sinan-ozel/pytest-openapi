@@ -1,7 +1,5 @@
 """Pytest plugin for OpenAPI contract testing."""
 
-import pytest
-
 
 def pytest_addoption(parser):
     """Add --openapi CLI option."""
@@ -25,15 +23,17 @@ def pytest_configure(config):
     base_url = config.getoption("--openapi")
     if base_url:
         import sys
-        from .openapi import validate_openapi_spec
+
+        import requests
+
         from .contract import (
+            get_test_report,
+            test_delete_endpoint,
             test_get_endpoint,
             test_post_endpoint,
             test_put_endpoint,
-            test_delete_endpoint,
-            get_test_report,
         )
-        import requests
+        from .openapi import validate_openapi_spec
 
         # Run validation checks
         validate_openapi_spec(base_url)
@@ -85,10 +85,10 @@ def pytest_configure(config):
 
         # Report results and exit
         if errors:
-            print(f"\n❌ Contract tests failed:")
+            print("\n❌ Contract tests failed:")
             for error in errors:
                 print(error)
             sys.exit(1)
         else:
-            print(f"\n✅ All contract tests passed!")
-            sys.exit(0)
+            print("\n✅ All contract tests passed!")
+            # Don't call sys.exit(0) - let pytest finish normally
