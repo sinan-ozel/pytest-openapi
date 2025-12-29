@@ -31,6 +31,7 @@
         "clemenspeters.format-json",
         "euskadi31.json-pretty-printer",
         "jgalianoz.qr-generator",
+        "gruntfuggly.todo-tree",
         "stkb.rewrap"
       ]
     }
