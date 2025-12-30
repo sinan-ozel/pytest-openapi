@@ -1,0 +1,91 @@
+"""Mock server with schemas but no examples - for testing example generation."""
+
+from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+
+
+@app.route("/openapi.json")
+def openapi():
+    """Return OpenAPI spec with schemas for request, examples for response."""
+    return jsonify(
+        {
+            "openapi": "3.0.0",
+            "info": {"title": "Schema Based API", "version": "1.0.0"},
+            "paths": {
+                "/test-types": {
+                    "post": {
+                        "summary": "Test various data types",
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "string_field": {
+                                                "type": "string",
+                                                "description": "A basic string field"
+                                            },
+                                            "email_field": {
+                                                "type": "string",
+                                                "format": "email",
+                                                "description": "An email address"
+                                            },
+                                            "integer_field": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 100,
+                                                "description": "An integer between 1 and 100"
+                                            },
+                                            "number_field": {
+                                                "type": "number",
+                                                "minimum": 0.0,
+                                                "maximum": 1.0,
+                                                "description": "A float between 0 and 1"
+                                            },
+                                            "boolean_field": {
+                                                "type": "boolean",
+                                                "description": "A boolean value"
+                                            },
+                                            "enum_field": {
+                                                "type": "string",
+                                                "enum": ["option1", "option2", "option3"],
+                                                "description": "An enum field"
+                                            }
+                                        },
+                                        "required": ["string_field", "integer_field"]
+                                    }
+                                    # Note: NO example here! Testing schema-based generation
+                                }
+                            },
+                        },
+                        "responses": {
+                            "200": {
+                                "description": "Success",
+                                "content": {
+                                    "application/json": {
+                                        "example": {
+                                            "id": 123,
+                                            "status": "success"
+                                        }
+                                    }
+                                },
+                            }
+                        },
+                    }
+                }
+            },
+        }
+    )
+
+
+@app.route("/test-types", methods=["POST"])
+def test_types():
+    """Accept any valid request and return success."""
+    data = request.get_json()
+    return jsonify({"id": 123, "status": "success"}), 200
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000)

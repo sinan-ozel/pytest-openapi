@@ -25,7 +25,6 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "pytest>=7.0.0",          # For running tests
-    "pytest-cov>=3.0.0",      # For test coverage reporting
     "pytest-depends>=1.0.1",  # For test dependency management
     "pytest-mock>=3.14.0",    # For mocking in tests
     "httpx>=0.28.1",          # To make more complex calls, such as streaming.

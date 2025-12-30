@@ -6,6 +6,11 @@ services:
     image: mock-server-missing-openapi:latest
     ports:
       - "8001:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   mock-server-no-examples:
     build:
@@ -14,6 +19,11 @@ services:
     image: mock-server-no-examples:latest
     ports:
       - "8002:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   mock-server-valid-api:
     build:
@@ -22,22 +32,11 @@ services:
     image: mock-server-valid-api:latest
     ports:
       - "8003:8000"
-
-  mock-server-get-missing-key:
-    build:
-      context: test_servers/get_missing_key
-      dockerfile: Dockerfile
-    image: mock-server-get-missing-key:latest
-    ports:
-      - "8004:8000"
-
-  mock-server-get-type-mismatch:
-    build:
-      context: test_servers/get_type_mismatch
-      dockerfile: Dockerfile
-    image: mock-server-get-type-mismatch:latest
-    ports:
-      - "8005:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   mock-server-post-500-error:
     build:
@@ -45,7 +44,12 @@ services:
       dockerfile: Dockerfile
     image: mock-server-post-500-error:latest
     ports:
-      - "8006:8000"
+      - "8004:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   mock-server-post-response-missing-key:
     build:
@@ -53,15 +57,12 @@ services:
       dockerfile: Dockerfile
     image: mock-server-post-response-missing-key:latest
     ports:
-      - "8007:8000"
-
-  mock-server-post-example-missing-key:
-    build:
-      context: test_servers/post_example_missing_key
-      dockerfile: Dockerfile
-    image: mock-server-post-example-missing-key:latest
-    ports:
-      - "8008:8000"
+      - "8005:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   mock-server-post-response-wrong-type:
     build:
@@ -69,23 +70,25 @@ services:
       dockerfile: Dockerfile
     image: mock-server-post-response-wrong-type:latest
     ports:
-      - "8009:8000"
+      - "8006:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
-  mock-server-put-response-missing-key:
+  mock-server-get-missing-key:
     build:
-      context: test_servers/put_response_missing_key
+      context: test_servers/get_missing_key
       dockerfile: Dockerfile
-    image: mock-server-put-response-missing-key:latest
+    image: mock-server-get-missing-key:latest
     ports:
-      - "8010:8000"
-
-  mock-server-delete-wrong-status:
-    build:
-      context: test_servers/delete_wrong_status
-      dockerfile: Dockerfile
-    image: mock-server-delete-wrong-status:latest
-    ports:
-      - "8011:8000"
+      - "8007:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   mock-server-nested-valid-api:
     build:
@@ -93,7 +96,12 @@ services:
       dockerfile: Dockerfile
     image: mock-server-nested-valid-api:latest
     ports:
-      - "8012:8000"
+      - "8008:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   mock-server-missing-descriptions:
     build:
@@ -101,27 +109,86 @@ services:
       dockerfile: Dockerfile
     image: mock-server-missing-descriptions:latest
     ports:
+      - "8009:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-post-example-missing-key:
+    build:
+      context: test_servers/post_example_missing_key
+      dockerfile: Dockerfile
+    image: mock-server-post-example-missing-key:latest
+    ports:
+      - "8010:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-get-type-mismatch:
+    build:
+      context: test_servers/get_type_mismatch
+      dockerfile: Dockerfile
+    image: mock-server-get-type-mismatch:latest
+    ports:
+      - "8011:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-delete-wrong-status:
+    build:
+      context: test_servers/delete_wrong_status
+      dockerfile: Dockerfile
+    image: mock-server-delete-wrong-status:latest
+    ports:
+      - "8012:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-schema-based-api:
+    build:
+      context: test_servers/schema_based_api
+      dockerfile: Dockerfile
+    image: mock-server-schema-based-api:latest
+    ports:
       - "8013:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-put-response-missing-key:
+    build:
+      context: test_servers/put_response_missing_key
+      dockerfile: Dockerfile
+    image: mock-server-put-response-missing-key:latest
+    ports:
+      - "8014:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
 
   test:
     build:
       context: ..
       dockerfile: tests/Dockerfile
     image: pytest-openapi-test:latest
-    command: pytest
-    working_dir: /app
-    depends_on:
-      - mock-server-missing-openapi
-      - mock-server-no-examples
-      - mock-server-valid-api
-      - mock-server-get-missing-key
-      - mock-server-get-type-mismatch
-      - mock-server-post-500-error
-      - mock-server-post-response-missing-key
-      - mock-server-post-example-missing-key
-      - mock-server-post-response-wrong-type
-      - mock-server-put-response-missing-key
-      - mock-server-delete-wrong-status
-      - mock-server-nested-valid-api
-      - mock-server-missing-descriptions
-
+    command: pytest /test_of_tests -vvv
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3G
