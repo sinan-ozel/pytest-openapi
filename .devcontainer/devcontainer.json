@@ -31,6 +31,7 @@
         "clemenspeters.format-json",
         "euskadi31.json-pretty-printer",
         "jgalianoz.qr-generator",
+        "42crunch.vscode-openapi",
         "gruntfuggly.todo-tree",
         "stkb.rewrap"
       ]
