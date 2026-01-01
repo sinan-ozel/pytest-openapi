@@ -192,6 +192,20 @@ def compare_responses(expected, actual):
                     if not matches:
                         return False, error
 
+        # If we've checked keys and types and any nested structures
+        # recursively without finding a mismatch, consider this a match
+        return True, None
+
+    # For lists, check element-wise types/structure
+    if isinstance(expected, list) and isinstance(actual, list):
+        if len(expected) != len(actual):
+            return False, f"List length mismatch: expected {len(expected)}, got {len(actual)}. Expected: {expected}, Actual: {actual}"
+        for e_item, a_item in zip(expected, actual):
+            matches, error = compare_responses(e_item, a_item)
+            if not matches:
+                return False, error
+        return True, None
+
     return False, f"Response mismatch.\nExpected: {expected}\nActual: {actual}"
 
 
@@ -397,34 +411,66 @@ def test_post_endpoint(base_url, path, operation):
     if expected_response is None:
         return False, "No example or schema found for 200/201 response"
 
-    # Test with the first test case (we can expand this to test all later)
-    request_test_case = request_test_cases[0]
+    # Test with all collected test cases (examples + generated)
+    errors = []
+    for request_test_case in request_test_cases:
+        # Make the POST request
+        try:
+            response = make_request("POST", url, json=request_test_case)
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Request failed: {e}"
+            log_test_result(
+                "POST",
+                path,
+                request_test_case,
+                expected_status,
+                expected_response,
+                None,
+                None,
+                False,
+                error_msg,
+            )
+            errors.append(error_msg)
+            continue
 
-    # Make the POST request
-    try:
-        response = make_request("POST", url, json=request_test_case)
-    except requests.exceptions.RequestException as e:
-        error_msg = f"Request failed: {e}"
-        log_test_result(
-            "POST",
-            path,
-            request_test_case,
-            expected_status,
-            expected_response,
-            None,
-            None,
-            False,
-            error_msg,
+        # Check status code (accept both 200 and 201 for POST)
+        actual_response = (
+            response.json() if response.status_code in [200, 201] else response.text
         )
-        return False, error_msg
 
-    # Check status code (accept both 200 and 201 for POST)
-    actual_response = (
-        response.json() if response.status_code in [200, 201] else response.text
-    )
+        if response.status_code not in [200, 201]:
+            error_msg = f"Expected status 200/201, got {response.status_code}. Response: {response.text}"
+            log_test_result(
+                "POST",
+                path,
+                request_test_case,
+                expected_status,
+                expected_response,
+                response.status_code,
+                actual_response,
+                False,
+                error_msg,
+            )
+            errors.append(error_msg)
+            continue
 
-    if response.status_code not in [200, 201]:
-        error_msg = f"Expected status 200/201, got {response.status_code}. Response: {response.text}"
+        # Check response matches example
+        matches, error = compare_responses(expected_response, actual_response)
+        if not matches:
+            log_test_result(
+                "POST",
+                path,
+                request_test_case,
+                expected_status,
+                expected_response,
+                response.status_code,
+                actual_response,
+                False,
+                error,
+            )
+            errors.append(error)
+            continue
+
         log_test_result(
             "POST",
             path,
@@ -433,37 +479,14 @@ def test_post_endpoint(base_url, path, operation):
             expected_response,
             response.status_code,
             actual_response,
-            False,
-            error_msg,
+            True,
         )
-        return False, error_msg
 
-    # Check response matches example
-    matches, error = compare_responses(expected_response, actual_response)
-    if not matches:
-        log_test_result(
-            "POST",
-            path,
-            request_test_case,
-            expected_status,
-            expected_response,
-            response.status_code,
-            actual_response,
-            False,
-            error,
-        )
-        return False, error
+    if errors:
+        # Return the first few errors for brevity
+        combined = "; ".join(str(e) for e in errors[:3])
+        return False, combined
 
-    log_test_result(
-        "POST",
-        path,
-        request_test_case,
-        expected_status,
-        expected_response,
-        response.status_code,
-        actual_response,
-        True,
-    )
     return True, None
 
 
@@ -549,9 +572,6 @@ def test_put_endpoint(base_url, path, operation):
     if expected_response is None:
         return False, "No example or schema found for 200 response"
 
-    # Use the first test case for testing
-    request_test_case = request_test_cases[0]
-
     # Replace path parameters with values from the response example
     url = f"{base_url}{path}"
     resolved_path = path
@@ -582,31 +602,66 @@ def test_put_endpoint(base_url, path, operation):
                 f"{{{param_name}}}", str(value)
             )
 
-    # Make the PUT request
-    try:
-        response = make_request("PUT", url, json=request_test_case)
-    except requests.exceptions.RequestException as e:
-        error_msg = f"Request failed: {e}"
-        log_test_result(
-            "PUT",
-            resolved_path,
-            request_test_case,
-            200,
-            expected_response,
-            None,
-            None,
-            False,
-            error_msg,
+    # Test all collected request cases
+    errors = []
+    for request_test_case in request_test_cases:
+        # Make the PUT request
+        try:
+            response = make_request("PUT", url, json=request_test_case)
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Request failed: {e}"
+            log_test_result(
+                "PUT",
+                resolved_path,
+                request_test_case,
+                200,
+                expected_response,
+                None,
+                None,
+                False,
+                error_msg,
+            )
+            errors.append(error_msg)
+            continue
+
+        # Check status code
+        actual_response = (
+            response.json() if response.status_code == 200 else response.text
         )
-        return False, error_msg
 
-    # Check status code
-    actual_response = (
-        response.json() if response.status_code == 200 else response.text
-    )
+        if response.status_code != 200:
+            error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
+            log_test_result(
+                "PUT",
+                resolved_path,
+                request_test_case,
+                200,
+                expected_response,
+                response.status_code,
+                actual_response,
+                False,
+                error_msg,
+            )
+            errors.append(error_msg)
+            continue
 
-    if response.status_code != 200:
-        error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
+        # Check response matches example
+        matches, error = compare_responses(expected_response, actual_response)
+        if not matches:
+            log_test_result(
+                "PUT",
+                resolved_path,
+                request_test_case,
+                200,
+                expected_response,
+                response.status_code,
+                actual_response,
+                False,
+                error,
+            )
+            errors.append(error)
+            continue
+
         log_test_result(
             "PUT",
             resolved_path,
@@ -615,37 +670,13 @@ def test_put_endpoint(base_url, path, operation):
             expected_response,
             response.status_code,
             actual_response,
-            False,
-            error_msg,
+            True,
         )
-        return False, error_msg
 
-    # Check response matches example
-    matches, error = compare_responses(expected_response, actual_response)
-    if not matches:
-        log_test_result(
-            "PUT",
-            resolved_path,
-            request_test_case,
-            200,
-            expected_response,
-            response.status_code,
-            actual_response,
-            False,
-            error,
-        )
-        return False, error
+    if errors:
+        combined = "; ".join(str(e) for e in errors[:3])
+        return False, combined
 
-    log_test_result(
-        "PUT",
-        resolved_path,
-        request_test_case,
-        200,
-        expected_response,
-        response.status_code,
-        actual_response,
-        True,
-    )
     return True, None
 
 

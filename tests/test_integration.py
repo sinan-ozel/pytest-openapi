@@ -262,3 +262,7 @@ def test_schema_based_api_generates_examples():
     # Check that regular tests in /app were also collected and ran
     assert "test_samples" in output and "3 passed" in output, \
         f"Expected regular tests to also run, got: {output}"
+
+    # Count contract test entries (they are printed as 'Test #N')
+    contract_tests = [line for line in output.splitlines() if line.strip().startswith("Test #")]
+    assert len(contract_tests) >= 10, f"Expected at least 10 contract tests, found {len(contract_tests)}\nOutput:\n{output}"

@@ -22,9 +22,8 @@ def pytest_configure(config):
     # If --openapi flag is provided, validate and test the OpenAPI spec
     base_url = config.getoption("--openapi")
     if base_url:
-        import sys
-
         import requests
+        import pytest
 
         from .contract import (
             get_test_report,
@@ -44,8 +43,7 @@ def pytest_configure(config):
             response.raise_for_status()
             spec = response.json()
         except Exception as e:
-            print(f"\n❌ Failed to fetch OpenAPI spec: {e}")
-            sys.exit(1)
+            pytest.exit(f"\n❌ Failed to fetch OpenAPI spec: {e}", returncode=1)
 
         # Run contract tests on all endpoints
         paths = spec.get("paths", {})
@@ -88,7 +86,7 @@ def pytest_configure(config):
             print("\n❌ Contract tests failed:")
             for error in errors:
                 print(error)
-            sys.exit(1)
+            pytest.exit("Contract tests failed", returncode=1)
         else:
             print("\n✅ All contract tests passed!")
             # Don't call sys.exit(0) - let pytest finish normally

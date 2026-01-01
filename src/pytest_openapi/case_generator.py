@@ -370,20 +370,40 @@ def generate_object_test_cases(schema, field_name="field"):
     test_cases = []
     warnings = []
 
-    # Generate one complete test case with all properties
-    obj = {}
+    # Collect test cases for each property
+    prop_values = {}
     for prop_name, prop_schema in properties.items():
         prop_test_cases, warning = generate_test_cases_for_schema(
             prop_schema, f"{field_name}.{prop_name}"
         )
         if warning:
             warnings.append(warning)
-        if prop_test_cases:
-            obj[prop_name] = prop_test_cases[0]
+        # Ensure we have at least one value
+        prop_values[prop_name] = prop_test_cases or [None]
 
-    test_cases.append(obj)
+    # Create a bounded Cartesian product of property values to produce multiple objects
+    # Limit the total generated objects to avoid explosion
+    from itertools import product
 
-    return test_cases, warnings
+    MAX_COMBINATIONS = 10
+    keys = list(prop_values.keys())
+    # Build iterables in a deterministic order
+    iterables = [prop_values[k] for k in keys]
+
+    combos = []
+    for combo in product(*iterables):
+        obj = {}
+        for k, v in zip(keys, combo):
+            obj[k] = v
+        combos.append(obj)
+        if len(combos) >= MAX_COMBINATIONS:
+            break
+
+    # If no combos generated, fall back to one empty object
+    if not combos:
+        combos = [{}]
+
+    return combos, warnings
 
 
 def generate_test_cases_for_schema(schema, field_name="field"):
