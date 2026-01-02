@@ -48,7 +48,6 @@ def log_test_result(
     actual_body,
     success,
     error_message=None,
-    expected_from_schema=False,
 ):
     """Log a test result for the final report.
 
@@ -69,7 +68,6 @@ def log_test_result(
         "request_body": request_body,
         "expected_status": expected_status,
         "expected_body": expected_body,
-        "expected_from_schema": expected_from_schema,
         "actual_status": actual_status,
         "actual_body": actual_body,
         "success": success,
@@ -126,11 +124,7 @@ def get_test_report():
             except (TypeError, ValueError):
                 actual_body_str = str(test["actual_body"])
 
-        # If the expected body came from the schema (generated), label it as the schema
-        if test.get("expected_from_schema"):
-            report_lines.append(f"Schema {test['expected_status']}")
-        else:
-            report_lines.append(f"Expected {test['expected_status']}")
+        report_lines.append(f"Expected {test['expected_status']}")
         report_lines.append(f"  {expected_body_str}")
         report_lines.append("")
         report_lines.append(f"Actual {test['actual_status']}")
@@ -234,7 +228,6 @@ def test_get_endpoint(base_url, path, operation):
     content = response_200.get("content", {})
 
     expected_response = None
-    expected_from_schema = False
     for media_type, media_obj in content.items():
         if "example" in media_obj:
             expected_response = media_obj["example"]
@@ -257,7 +250,6 @@ def test_get_endpoint(base_url, path, operation):
                     print(f"  - {warning}")
             if response_test_cases:
                 expected_response = response_test_cases[0]
-                expected_from_schema = True
                 break
 
     if expected_response is None:
@@ -298,7 +290,6 @@ def test_get_endpoint(base_url, path, operation):
             actual_response,
             False,
             error_msg,
-            expected_from_schema=expected_from_schema,
         )
         return False, error_msg
 
@@ -315,7 +306,6 @@ def test_get_endpoint(base_url, path, operation):
             actual_response,
             False,
             error,
-            expected_from_schema=expected_from_schema,
         )
         return False, error
 
@@ -328,7 +318,6 @@ def test_get_endpoint(base_url, path, operation):
         response.status_code,
         actual_response,
         True,
-        expected_from_schema=expected_from_schema,
     )
     return True, None
 
@@ -391,7 +380,6 @@ def test_post_endpoint(base_url, path, operation):
     content = response_200.get("content", {})
 
     expected_response = None
-    expected_from_schema = False
     expected_status = 201 if "201" in responses else 200
 
     for media_type, media_obj in content.items():
@@ -418,7 +406,6 @@ def test_post_endpoint(base_url, path, operation):
                     warnings.append(warning)
             if generated:
                 expected_response = generated[0]
-                expected_from_schema = True
             break
 
     if expected_response is None:
@@ -463,7 +450,6 @@ def test_post_endpoint(base_url, path, operation):
                 actual_response,
                 False,
                 error_msg,
-                expected_from_schema=expected_from_schema,
             )
             errors.append(error_msg)
             continue
@@ -481,7 +467,6 @@ def test_post_endpoint(base_url, path, operation):
                 actual_response,
                 False,
                 error,
-                expected_from_schema=expected_from_schema,
             )
             errors.append(error)
             continue
@@ -495,7 +480,6 @@ def test_post_endpoint(base_url, path, operation):
             response.status_code,
             actual_response,
             True,
-            expected_from_schema=expected_from_schema,
         )
 
     if errors:
@@ -559,7 +543,6 @@ def test_put_endpoint(base_url, path, operation):
     content = response_200.get("content", {})
 
     expected_response = None
-    expected_from_schema = False
     for media_type, media_obj in content.items():
         if "example" in media_obj:
             expected_response = media_obj["example"]
@@ -584,7 +567,6 @@ def test_put_endpoint(base_url, path, operation):
                     print(f"\n{warning}")
             if response_test_cases:
                 expected_response = response_test_cases[0]
-                expected_from_schema = True
                 break
 
     if expected_response is None:
@@ -659,7 +641,6 @@ def test_put_endpoint(base_url, path, operation):
                 actual_response,
                 False,
                 error_msg,
-                expected_from_schema=expected_from_schema,
             )
             errors.append(error_msg)
             continue
@@ -677,7 +658,6 @@ def test_put_endpoint(base_url, path, operation):
                 actual_response,
                 False,
                 error,
-                expected_from_schema=expected_from_schema,
             )
             errors.append(error)
             continue
@@ -691,7 +671,6 @@ def test_put_endpoint(base_url, path, operation):
             response.status_code,
             actual_response,
             True,
-            expected_from_schema=expected_from_schema,
         )
 
     if errors:
@@ -761,12 +740,6 @@ def test_delete_endpoint(base_url, path, operation):
         expected_status = 204
     if expected_body is None:
         expected_body = ""
-    expected_from_schema = False
-    # If expected_body was taken from generated response_example, mark it
-    if response_example and not isinstance(response_example, str):
-        # Heuristic: if response_example came from generate_test_cases_for_schema,
-        # it will likely be a dict/list rather than a single string.
-        expected_from_schema = True
 
     # Replace path parameters with values from the example
     url = f"{base_url}{path}"
@@ -843,15 +816,14 @@ def test_delete_endpoint(base_url, path, operation):
         )
         return False, error_msg
 
-        log_test_result(
-            "DELETE",
-            resolved_path,
-            None,
-            expected_status,
-            expected_body,
-            response.status_code,
-            actual_response,
-            True,
-            expected_from_schema=expected_from_schema,
-        )
+    log_test_result(
+        "DELETE",
+        resolved_path,
+        None,
+        expected_status,
+        expected_body,
+        response.status_code,
+        actual_response,
+        True,
+    )
     return True, None
