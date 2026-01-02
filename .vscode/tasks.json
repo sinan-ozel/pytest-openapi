@@ -28,10 +28,9 @@
     {
       "label": "run-mock-server",
       "type": "shell",
-      "command": "bash",
+      "command": "${workspaceFolder}/.vscode/run_mock.sh",
       "args": [
-        "-lc",
-        "docker compose -f tests/docker-compose.yaml --project-directory tests up -d ${input:composeService} && docker compose -f tests/docker-compose.yaml --project-directory tests run --rm test pytest --openapi=http://${input:composeService}:8000 /app/test_samples/ -q; RC=$?; docker compose -f tests/docker-compose.yaml --project-directory tests rm -fs ${input:composeService}; exit $RC"
+        "${input:composeService}"
       ],
       "problemMatcher": [],
       "presentation": {
