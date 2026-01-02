@@ -181,6 +181,19 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-email-server:
+    build:
+      context: test_servers/email_server
+      dockerfile: Dockerfile
+    image: mock-server-email-server:latest
+    ports:
+      - "8015:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..
