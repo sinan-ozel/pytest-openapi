@@ -84,7 +84,7 @@ def openapi():
 def test_types():
     """Accept any valid request and return success."""
     data = request.get_json()
-    return jsonify({"id": 123, "status": "success"}), 200
+    return jsonify({"id": 124, "status": "success"}), 200
 
 
 if __name__ == "__main__":

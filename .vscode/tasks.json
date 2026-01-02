@@ -1,6 +1,48 @@
 {
   "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "composeService",
+      "type": "pickString",
+      "description": "Choose the service to start for contract tests",
+      "options": [
+        "mock-server-missing-openapi",
+        "mock-server-no-examples",
+        "mock-server-valid-api",
+        "mock-server-post-500-error",
+        "mock-server-post-response-missing-key",
+        "mock-server-post-response-wrong-type",
+        "mock-server-get-missing-key",
+        "mock-server-nested-valid-api",
+        "mock-server-missing-descriptions",
+        "mock-server-post-example-missing-key",
+        "mock-server-get-type-mismatch",
+        "mock-server-delete-wrong-status",
+        "mock-server-schema-based-api",
+        "mock-server-put-response-missing-key"
+      ],
+      "default": "mock-server-schema-based-api"
+    }
+  ],
   "tasks": [
+    {
+      "label": "run-mock-server",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "docker compose -f tests/docker-compose.yaml --project-directory tests up -d ${input:composeService} && docker compose -f tests/docker-compose.yaml --project-directory tests run --rm test pytest --openapi=http://${input:composeService}:8000 /app/test_samples/ -q; RC=$?; docker compose -f tests/docker-compose.yaml --project-directory tests rm -fs ${input:composeService}; exit $RC"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    },
     {
       "label": "test",
       "type": "shell",
