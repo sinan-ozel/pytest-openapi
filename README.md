@@ -1,71 +1,109 @@
-![Tests & Lint](https://github.com/<ORGANIZATION>/<MODULE_NAME>/actions/workflows/ci.yaml/badge.svg?branch=main)
-![PyPI](https://img.shields.io/pypi/v/<MODULE_NAME>.svg)
-![Downloads](https://static.pepy.tech/badge/<MODULE_NAME>)
-![Monthly Downloads](https://static.pepy.tech/badge/<MODULE_NAME>/month)
-![License](https://img.shields.io/github/license/sinan-ozel/pypi-publish-with-cicd.svg)
+# 🧪 OpenAPI Contract Tester
 
-# Introduction
+An opinionated, lightweight **black-box contract tester** against a **live API** using its OpenAPI specification as the source of truth.
 
-# ✨ Introduction
+This tool validates OpenAPI quality, generates test cases from schemas, and verifies that real HTTP responses match the contract.
+This "certifies" that the documentation is complete with descriptions, example, and schema, and that the endpoint behaves as the documentation suggests.
 
-This repository serves as a polished, production-ready template for creating PyPI modules.
+## ✨ What it does
 
-It includes:
+### ▶️ Quick Example
 
-- 🧪 **Automated Unit Testing** — Comprehensive test execution via CI.
-- 🧹 **Linting & Code Quality** — Ensures clean, consistent standards.
-- 🔢 **SemVer-Compatible Versioning** — Predictable, automated release management.
+![Swagger POST endpoint /email](swagger-screenshot-1.png)
 
-Additional features:
-
-- 🛠️ **.devcontainer Environment** — Enables seamless collaboration with zero local setup beyond VS Code and Docker.
-- ▶️ **Ready-Made VS Code Tasks** (`.vscode/tasks.json`) — Developers can run tests instantly, even without installing dependencies.
-
-# Examples
-(https://github.com/sinan-ozel/pytest-repeated)[https://github.com/sinan-ozel/pytest-repeated]
-(https://github.com/sinan-ozel/redis-memory)[https://github.com/sinan-ozel/redis-memory]
-
-# Usage
-
-1. Base a repo on this template.
-
-2. Find all instances of <MODULE_NAME>, <MODULE-NAME> and <ORGANIZATION> in muiiltiple files and replace with your module. (Take care with `_` and `-`, use `-` in docker-compose.yaml, `_` in `pyproject.toml`, and in the shields.
-Python requires module names to use `_`, but the URLs tend to use `-`.
-
-3. Create the folders `src/` and `src/<MODULE_NAME>`. `touch src/<MODULE_NAME>/__init__.py`
-
-3. Add name and email under author in `pyproject.toml`.
-
-3. Set up PyPI repo with the <MODULE_NAME>. Set up publisher as the github repo that you created in step 1. (See below for more details.) # TODO: Add a link to a good set of instructions.
-
-4. Update the readme: Delete the top part, Introduction and Usage, and replace with your content.
-
-## PyPI Setup
-
-1. Clock on your username on PyPI to get a scroll-down menu, then go to "Your Projects" -> "Publishing".
-2. Scroll down. Stay on the GitHub tab.
-3. Enter the <MODULE_NAME> from the repo as ``PyPI Project Name''. (Actually, you can have a different name, but few do that.)
-4. Enter the <ORGANIZATION> from the repo as ``Organization Name''.
-5. Enter the <MODULE_NAME> from the repo as ``Repository Name''. (Actually, you can have a different name, but few do that.)
-6. Workflow name is `ci.yaml` - it's the file in the `.github/workflows/` folder. Just enter the filename, not the full path.
-7. You do not need to enter anything in the environment, keep the default.
-
-This is it. Pro Tip: Make sure that the PyPI project name is available before creating the repo.
-
-
-```
---- WHEN UPDATING README.md: YOU CAN KEEP EVERYTHING BELOW THIS LINE ---
+```bash
+pytest --openapi=http://localhost:8000
 ```
 
-# 🛠️ Development
+```
+Test #10 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 10,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
+  }
+
+```
+Generates multiple QA tests.
+
+✔️ Validates OpenAPI request/response definitions
+✔️ Enforces schema field descriptions
+✔️ Generates test cases from schemas, checks response codes and types in the response
+✔️ Tests the exanples
+✔️ Tests **GET / POST / PUT / DELETE** endpoints
+✔️ Compares live responses against examples
+✔️ Produces a readable test report
+
+
+# ▶️ Detailed Example
+
+## Install
+```bash
+pip install pytest-openapi
+```
+
+## Run
+
+Say that you have a service running at port `8000` on `localhost`. Then, run:
+
+```bash
+pytest --openapi=http://localhost:8000
+```
+
+## Server
+See here an example server - `email-server`: [tests/test_servers/email_server/server.py](tests/test_servers/email_server/server.py)
+
+## Resulting Tests
+
+[tests/test_servers/email_server/email_test_output.txt](tests/test_servers/email_server/email_test_output.txt)
+
+# Future Plans / TODO
+
+This is a work in progress.
+- [ ] A check that the example matches the schema
+- [ ] Ask that 400 responses be in the documentation.
+- [ ] A check for regexp and email formats.
+
+# Contributing
+Contributions are welcome!
 
 The only requirement is 🐳 Docker.
-(The `.devcontainer` and `tasks.json` are prepared assuming a *nix system, but if you know the commands, this will work on Windows, too.)
 
-1. Clone the repo.
-2. Branch out.
-3. Open in "devcontainer" on VS Code and start developing. Run `pytest` under `tests` to test.
-4. Akternatively, if you are a fan of Test-Driven Development like me, you can run the tests without getting on a container. `.vscode/tasks.json` has the command to do so, but it's also listed here:
-```
-docker compose -f tests/docker-compose.yaml up --build --abort-on-container-exit --exit-code-from test
-```
+Test are containerized, run them using the VS Code task `test`. If you don't want to use VS Code, the command is `docker compose -f ./tests/docker-compose.yaml --project-directory ./tests up --build --abort-on-container-exit --exit-code-from test`. Run this before making a PR, please.
+
+There is also a development environment for VS Code, if you need it. On this environment, you can run the task `run-mock-server` to run one of the [mock servers](tests/test_servers) and see the output.
+
+You can add your own mock server, and then add integration tests. Just follow the same pattern as every test to make a call - `subprocess.run('pytest', '--openapi=http://your-server:8000`.
+
+Please reformat and lint before making a PR. The VS Task is `lint`, and if you don't want to use VS Code, the command is: `docker compose -f ./lint/docker-compose.yaml --project-directory ./lint up --build --abort-on-container-exit --exit-code-from linter`. Run this before making a PR, please.
+
+If you add a functionality, please add to the the documentation.
+
+Please submit a pull request or open an issue for any bugs or feature requests.
+
+The moment your PR is merged, you get a dev release. You can then set up the version number to use your changes.
+
+# License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+

@@ -1,0 +1,698 @@
+✅ OpenAPI spec validated successfully from http://mock-server-email-server:8000/openapi.json
+   Found 2 path(s)
+
+
+================================================================================
+OpenAPI Contract Test Report
+================================================================================
+
+Test #1 ✅
+POST /email
+Requested:
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #2 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Lorem ipsum dolor sit amet"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 2,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Lorem ipsum dolor sit amet"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #3 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with 'single' quotes"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 3,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with 'single' quotes"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #4 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with \"double\" quotes"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 4,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with \"double\" quotes"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #5 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test:with:colons"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 5,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test:with:colons"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #6 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\\with\\backslashes"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 6,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\\with\\backslashes"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #7 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\nwith\nnewlines"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 7,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\nwith\nnewlines"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #8 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\r\nwith\r\nCRLF"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 8,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\r\nwith\r\nCRLF"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #9 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with UTF-8: caf\u00e9, na\u00efve, \u4e2d\u6587, \u65e5\u672c\u8a9e"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 9,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with UTF-8: caf\u00e9, na\u00efve, \u4e2d\u6587, \u65e5\u672c\u8a9e"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #10 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 10,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #11 ✅
+POST /email
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": ""
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 11,
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": ""
+  }
+
+--------------------------------------------------------------------------------
+
+Test #12 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 12,
+    "subject": 12345,
+    "to": "bob@example.com"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #13 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Lorem ipsum dolor sit amet"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 13,
+    "subject": 12345,
+    "to": "Lorem ipsum dolor sit amet"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #14 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with 'single' quotes"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 14,
+    "subject": 12345,
+    "to": "Test with 'single' quotes"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #15 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with \"double\" quotes"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 15,
+    "subject": 12345,
+    "to": "Test with \"double\" quotes"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #16 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test:with:colons"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 16,
+    "subject": 12345,
+    "to": "Test:with:colons"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #17 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\\with\\backslashes"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 17,
+    "subject": 12345,
+    "to": "Test\\with\\backslashes"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #18 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\nwith\nnewlines"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 18,
+    "subject": 12345,
+    "to": "Test\nwith\nnewlines"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #19 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test\r\nwith\r\nCRLF"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 19,
+    "subject": 12345,
+    "to": "Test\r\nwith\r\nCRLF"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #20 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test with UTF-8: caf\u00e9, na\u00efve, \u4e2d\u6587, \u65e5\u672c\u8a9e"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 20,
+    "subject": 12345,
+    "to": "Test with UTF-8: caf\u00e9, na\u00efve, \u4e2d\u6587, \u65e5\u672c\u8a9e"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #21 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 21,
+    "subject": 12345,
+    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+Test #22 ❌
+POST /email_bad
+Requested:
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "subject": "Lorem ipsum dolor sit amet",
+    "to": ""
+  }
+
+Expected 201
+  {
+    "body": "Hi Bob, how are you?",
+    "from": "alice@example.com",
+    "id": 1,
+    "subject": "Hello",
+    "to": "bob@example.com"
+  }
+
+Actual 201
+  {
+    "body": "Lorem ipsum dolor sit amet",
+    "from": "Lorem ipsum dolor sit amet",
+    "id": 22,
+    "subject": 12345,
+    "to": ""
+  }
+
+Error: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+
+--------------------------------------------------------------------------------
+
+
+❌ Contract tests failed:
+  POST /email_bad: Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345; Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345; Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+Exit: Contract tests failed
+
+
+~/sinanozel@github/pytest-openapi on  main! ⌚ 22:07:32
+$
