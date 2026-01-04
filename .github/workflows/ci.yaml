@@ -45,12 +45,6 @@ jobs:
             --wrap-summaries 72 \
             --wrap-descriptions 72 \
             src/
-          docformatter \
-            --in-place \
-            --recursive \
-            --wrap-summaries 72 \
-            --wrap-descriptions 72 \
-            src/
 
       - name: Run isort
         if: github.ref != 'refs/heads/main'
