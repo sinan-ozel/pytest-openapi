@@ -5,6 +5,13 @@ An opinionated, lightweight **black-box contract tester** against a **live API**
 This tool validates OpenAPI quality, generates test cases from schemas, and verifies that real HTTP responses match the contract.
 This "certifies" that the documentation is complete with descriptions, example, and schema, and that the endpoint behaves as the documentation suggests.
 
+## Why?
+
+This package tries to simulate the frustrations of API users, as consumers.
+With the rise of "agents", this type of documentation-code match became even
+more important, because LLMs really have trouble choosing tools or using them
+properly when they do not work as intended.
+
 ## ✨ What it does
 
 ### ▶️ Quick Example
@@ -84,6 +91,11 @@ This is a work in progress.
 - [ ] A check that the example matches the schema
 - [ ] Ask that 400 responses be in the documentation.
 - [ ] A check for regexp and email formats.
+- [ ] Extra checks from 200 or 201 messages with missing keys to see 400 messages.
+- [ ] Option to turn off the description requirement.
+
+## In Consideration
+- [ ] Use LLM-as-a-judge to assess the error messages and check their spelling.
 
 # Contributing
 Contributions are welcome!
