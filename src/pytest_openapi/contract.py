@@ -199,7 +199,10 @@ def compare_responses(expected, actual):
     # For lists, check element-wise types/structure
     if isinstance(expected, list) and isinstance(actual, list):
         if len(expected) != len(actual):
-            return False, f"List length mismatch: expected {len(expected)}, got {len(actual)}. Expected: {expected}, Actual: {actual}"
+            return (
+                False,
+                f"List length mismatch: expected {len(expected)}, got {len(actual)}. Expected: {expected}, Actual: {actual}",
+            )
         for e_item, a_item in zip(expected, actual):
             matches, error = compare_responses(e_item, a_item)
             if not matches:
@@ -435,7 +438,9 @@ def test_post_endpoint(base_url, path, operation):
 
         # Check status code (accept both 200 and 201 for POST)
         actual_response = (
-            response.json() if response.status_code in [200, 201] else response.text
+            response.json()
+            if response.status_code in [200, 201]
+            else response.text
         )
 
         if response.status_code not in [200, 201]:

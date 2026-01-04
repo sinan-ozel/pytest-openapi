@@ -22,8 +22,8 @@ def pytest_configure(config):
     # If --openapi flag is provided, validate and test the OpenAPI spec
     base_url = config.getoption("--openapi")
     if base_url:
-        import requests
         import pytest
+        import requests
 
         from .contract import (
             get_test_report,

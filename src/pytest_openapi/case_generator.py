@@ -367,7 +367,6 @@ def generate_object_test_cases(schema, field_name="field"):
     """
     properties = schema.get("properties", {})
 
-    test_cases = []
     warnings = []
 
     # Collect test cases for each property
