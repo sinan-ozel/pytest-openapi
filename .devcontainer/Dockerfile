@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-bookworm
 
 WORKDIR /workspace
 
@@ -14,12 +14,16 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     lsb-release \
-    sudo
+ && rm -rf /var/lib/apt/lists/*
 
 
 COPY pyproject.toml .
 COPY src/ ./src/
 COPY tests/ ./tests/
+
+RUN useradd -m vscode && \
+    mkdir -p /home/vscode && \
+    chown -R vscode:vscode /home/vscode
 
 # Install Python dependencies
 RUN pip install --upgrade pip
