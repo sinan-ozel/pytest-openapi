@@ -19,7 +19,8 @@
         "mock-server-get-type-mismatch",
         "mock-server-delete-wrong-status",
         "mock-server-schema-based-api",
-        "mock-server-put-response-missing-key"
+        "mock-server-put-response-missing-key",
+        "mock-server-email-server"
       ],
       "default": "mock-server-schema-based-api"
     }
