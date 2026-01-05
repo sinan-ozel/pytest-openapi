@@ -26,11 +26,11 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "Item ID"
+                                                    "description": "Item ID",
                                                 },
                                                 "name": {
                                                     "type": "string",
-                                                    "description": "Item name"
+                                                    "description": "Item name",
                                                 },
                                             },
                                         },

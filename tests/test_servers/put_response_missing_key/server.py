@@ -11,7 +11,10 @@ def openapi():
     return jsonify(
         {
             "openapi": "3.0.0",
-            "info": {"title": "PUT Response Missing Key API", "version": "1.0.0"},
+            "info": {
+                "title": "PUT Response Missing Key API",
+                "version": "1.0.0",
+            },
             "paths": {
                 "/items/{item_id}": {
                     "put": {
@@ -33,7 +36,7 @@ def openapi():
                                         "properties": {
                                             "name": {
                                                 "type": "string",
-                                                "description": "Item name"
+                                                "description": "Item name",
                                             }
                                         },
                                     },
@@ -51,15 +54,15 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "Item ID"
+                                                    "description": "Item ID",
                                                 },
                                                 "name": {
                                                     "type": "string",
-                                                    "description": "Item name"
+                                                    "description": "Item name",
                                                 },
                                                 "updated": {
                                                     "type": "boolean",
-                                                    "description": "Update status"
+                                                    "description": "Update status",
                                                 },
                                             },
                                         },

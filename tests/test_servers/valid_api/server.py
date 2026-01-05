@@ -40,15 +40,15 @@ def openapi():
                                                 "properties": {
                                                     "id": {
                                                         "type": "integer",
-                                                        "description": "User ID"
+                                                        "description": "User ID",
                                                     },
                                                     "name": {
                                                         "type": "string",
-                                                        "description": "User name"
+                                                        "description": "User name",
                                                     },
                                                     "email": {
                                                         "type": "string",
-                                                        "description": "User email"
+                                                        "description": "User email",
                                                     },
                                                 },
                                             },
@@ -82,11 +82,11 @@ def openapi():
                                         "properties": {
                                             "name": {
                                                 "type": "string",
-                                                "description": "User name"
+                                                "description": "User name",
                                             },
                                             "email": {
                                                 "type": "string",
-                                                "description": "User email"
+                                                "description": "User email",
                                             },
                                         },
                                     },
@@ -107,15 +107,15 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "User ID"
+                                                    "description": "User ID",
                                                 },
                                                 "name": {
                                                     "type": "string",
-                                                    "description": "User name"
+                                                    "description": "User name",
                                                 },
                                                 "email": {
                                                     "type": "string",
-                                                    "description": "User email"
+                                                    "description": "User email",
                                                 },
                                             },
                                         },
@@ -136,7 +136,7 @@ def openapi():
                                             "properties": {
                                                 "error": {
                                                     "type": "string",
-                                                    "description": "Error message"
+                                                    "description": "Error message",
                                                 }
                                             },
                                         },
@@ -169,11 +169,11 @@ def openapi():
                                         "properties": {
                                             "name": {
                                                 "type": "string",
-                                                "description": "User name"
+                                                "description": "User name",
                                             },
                                             "email": {
                                                 "type": "string",
-                                                "description": "User email"
+                                                "description": "User email",
                                             },
                                         },
                                     },
@@ -194,15 +194,15 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "User ID"
+                                                    "description": "User ID",
                                                 },
                                                 "name": {
                                                     "type": "string",
-                                                    "description": "User name"
+                                                    "description": "User name",
                                                 },
                                                 "email": {
                                                     "type": "string",
-                                                    "description": "User email"
+                                                    "description": "User email",
                                                 },
                                             },
                                         },
@@ -223,13 +223,11 @@ def openapi():
                                             "properties": {
                                                 "error": {
                                                     "type": "string",
-                                                    "description": "Error message"
+                                                    "description": "Error message",
                                                 }
                                             },
                                         },
-                                        "example": {
-                                            "error": "User not found"
-                                        },
+                                        "example": {"error": "User not found"},
                                     }
                                 },
                             },
@@ -258,13 +256,11 @@ def openapi():
                                             "properties": {
                                                 "error": {
                                                     "type": "string",
-                                                    "description": "Error message"
+                                                    "description": "Error message",
                                                 }
                                             },
                                         },
-                                        "example": {
-                                            "error": "User not found"
-                                        },
+                                        "example": {"error": "User not found"},
                                     }
                                 },
                             },

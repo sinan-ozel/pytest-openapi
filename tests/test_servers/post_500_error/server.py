@@ -25,7 +25,7 @@ def openapi():
                                         "properties": {
                                             "item": {
                                                 "type": "string",
-                                                "description": "Item name"
+                                                "description": "Item name",
                                             }
                                         },
                                     },
@@ -43,7 +43,7 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "Order ID"
+                                                    "description": "Order ID",
                                                 }
                                             },
                                         },

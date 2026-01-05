@@ -22,7 +22,12 @@ def openapi():
                                 "application/json": {
                                     "schema": {
                                         "type": "object",
-                                        "required": ["to", "from", "subject", "body"],
+                                        "required": [
+                                            "to",
+                                            "from",
+                                            "subject",
+                                            "body",
+                                        ],
                                         "properties": {
                                             "to": {
                                                 "type": "string",
@@ -89,9 +94,9 @@ def openapi():
                                             "body": "Hi Bob, how are you?",
                                         },
                                     }
-                                }
+                                },
                             }
-                        }
+                        },
                     }
                 },
                 "/email_bad": {
@@ -103,12 +108,29 @@ def openapi():
                                 "application/json": {
                                     "schema": {
                                         "type": "object",
-                                        "required": ["to", "from", "subject", "body"],
+                                        "required": [
+                                            "to",
+                                            "from",
+                                            "subject",
+                                            "body",
+                                        ],
                                         "properties": {
-                                            "to": {"type": "string", "description": "Recipient email address"},
-                                            "from": {"type": "string", "description": "Sender email address"},
-                                            "subject": {"type": "string", "description": "Email subject"},
-                                            "body": {"type": "string", "description": "Email body"},
+                                            "to": {
+                                                "type": "string",
+                                                "description": "Recipient email address",
+                                            },
+                                            "from": {
+                                                "type": "string",
+                                                "description": "Sender email address",
+                                            },
+                                            "subject": {
+                                                "type": "string",
+                                                "description": "Email subject",
+                                            },
+                                            "body": {
+                                                "type": "string",
+                                                "description": "Email body",
+                                            },
                                         },
                                     },
                                     "example": {
@@ -128,12 +150,27 @@ def openapi():
                                         "schema": {
                                             "type": "object",
                                             "properties": {
-                                                "id": {"type": "integer", "description": "Email ID"},
-                                                "to": {"type": "string", "description": "Recipient email address"},
-                                                "from": {"type": "string", "description": "Sender email address"},
-                                                "subject": {"type": "string", "description": "Email subject"},
-                                                "body": {"type": "string", "description": "Email body"},
-                                            }
+                                                "id": {
+                                                    "type": "integer",
+                                                    "description": "Email ID",
+                                                },
+                                                "to": {
+                                                    "type": "string",
+                                                    "description": "Recipient email address",
+                                                },
+                                                "from": {
+                                                    "type": "string",
+                                                    "description": "Sender email address",
+                                                },
+                                                "subject": {
+                                                    "type": "string",
+                                                    "description": "Email subject",
+                                                },
+                                                "body": {
+                                                    "type": "string",
+                                                    "description": "Email body",
+                                                },
+                                            },
                                         },
                                         "example": {
                                             "id": 1,
@@ -145,9 +182,9 @@ def openapi():
                                     }
                                 },
                             }
-                        }
+                        },
                     }
-                }
+                },
             },
         }
     )

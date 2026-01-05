@@ -22,8 +22,9 @@ def test_openapi_flag_is_recognized():
 
     # Check that the flag is NOT unrecognized
     output = result.stdout + result.stderr
-    assert "unrecognized arguments: --openapi" not in output, \
-        f"Plugin not loaded: --openapi flag not recognized. Output: {output}"
+    assert (
+        "unrecognized arguments: --openapi" not in output
+    ), f"Plugin not loaded: --openapi flag not recognized. Output: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -42,12 +43,15 @@ def test_missing_openapi_endpoint_fails():
     )
 
     # Should fail because /openapi.json is not available
-    assert result.returncode != 0, "Expected pytest to fail for missing OpenAPI endpoint"
+    assert (
+        result.returncode != 0
+    ), "Expected pytest to fail for missing OpenAPI endpoint"
 
     # Check that output indicates the failure
     output = result.stdout + result.stderr
-    assert "openapi" in output.lower() or "error" in output.lower(), \
-        f"Expected error message about OpenAPI in output, got: {output}"
+    assert (
+        "openapi" in output.lower() or "error" in output.lower()
+    ), f"Expected error message about OpenAPI in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -65,12 +69,15 @@ def test_missing_examples_fails():
     )
 
     # Should fail because OpenAPI spec has no examples
-    assert result.returncode != 0, "Expected pytest to fail when examples are missing"
+    assert (
+        result.returncode != 0
+    ), "Expected pytest to fail when examples are missing"
 
     # Check that output indicates the failure
     output = result.stdout + result.stderr
-    assert "example" in output.lower() or "error" in output.lower(), \
-        f"Expected error message about missing examples in output, got: {output}"
+    assert (
+        "example" in output.lower() or "error" in output.lower()
+    ), f"Expected error message about missing examples in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -87,8 +94,10 @@ def test_valid_api_passes():
     )
 
     output = result.stdout + result.stderr
-    assert "✅ OpenAPI spec validated successfully" in output or "✅ All contract tests passed!" in output, \
-        f"Expected validation success, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+        or "✅ All contract tests passed!" in output
+    ), f"Expected validation success, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -105,8 +114,9 @@ def test_get_missing_key_detected():
     )
 
     output = result.stdout + result.stderr
-    assert "missing key" in output.lower() or "price" in output.lower(), \
-        f"Expected error about missing key 'price', got: {output}"
+    assert (
+        "missing key" in output.lower() or "price" in output.lower()
+    ), f"Expected error about missing key 'price', got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -123,8 +133,9 @@ def test_get_type_mismatch_detected():
     )
 
     output = result.stdout + result.stderr
-    assert "type mismatch" in output.lower() or ("str" in output.lower() and "int" in output.lower()), \
-        f"Expected error about type mismatch, got: {output}"
+    assert "type mismatch" in output.lower() or (
+        "str" in output.lower() and "int" in output.lower()
+    ), f"Expected error about type mismatch, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -141,8 +152,9 @@ def test_post_500_error_detected():
     )
 
     output = result.stdout + result.stderr
-    assert "500" in output, \
-        f"Expected error mentioning status code 500, got: {output}"
+    assert (
+        "500" in output
+    ), f"Expected error mentioning status code 500, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -152,15 +164,20 @@ def test_post_response_missing_key_detected():
     time.sleep(0.5)
 
     result = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-post-response-missing-key:8000", "-v"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-response-missing-key:8000",
+            "-v",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
 
     output = result.stdout + result.stderr
-    assert "missing key" in output.lower() or "status" in output.lower(), \
-        f"Expected error about missing key 'status', got: {output}"
+    assert (
+        "missing key" in output.lower() or "status" in output.lower()
+    ), f"Expected error about missing key 'status', got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -170,15 +187,20 @@ def test_post_example_missing_key_detected():
     time.sleep(0.5)
 
     result = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-post-example-missing-key:8000", "-v"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-example-missing-key:8000",
+            "-v",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
 
     output = result.stdout + result.stderr
-    assert "extra key" in output.lower() or "created_at" in output.lower(), \
-        f"Expected error about extra key 'created_at', got: {output}"
+    assert (
+        "extra key" in output.lower() or "created_at" in output.lower()
+    ), f"Expected error about extra key 'created_at', got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -188,15 +210,20 @@ def test_post_response_wrong_type_detected():
     time.sleep(0.5)
 
     result = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-post-response-wrong-type:8000", "-v"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-response-wrong-type:8000",
+            "-v",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
 
     output = result.stdout + result.stderr
-    assert "type mismatch" in output.lower(), \
-        f"Expected error about type mismatch, got: {output}"
+    assert (
+        "type mismatch" in output.lower()
+    ), f"Expected error about type mismatch, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -207,26 +234,43 @@ def test_email_server_valid_and_invalid():
 
     # /email should validate successfully
     res_good = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-email-server:8000", "-k", "email and not bad", "-q"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-email-server:8000",
+            "-k",
+            "email and not bad",
+            "-q",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
     out_good = res_good.stdout + res_good.stderr
-    assert "✅ OpenAPI spec validated successfully" in out_good or res_good.returncode == 0, \
-        f"Expected /email to validate successfully, got: {out_good}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in out_good
+        or res_good.returncode == 0
+    ), f"Expected /email to validate successfully, got: {out_good}"
 
     # /email_bad should fail due to type mismatch
     res_bad = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-email-server:8000", "-k", "email_bad", "-q"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-email-server:8000",
+            "-k",
+            "email_bad",
+            "-q",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
     out_bad = res_bad.stdout + res_bad.stderr
-    assert res_bad.returncode != 0, f"Expected /email_bad tests to fail, got: {out_bad}"
-    assert "type mismatch" in out_bad.lower() or "expected str" in out_bad.lower(), \
-        f"Expected type mismatch error for /email_bad, got: {out_bad}"
+    assert (
+        res_bad.returncode != 0
+    ), f"Expected /email_bad tests to fail, got: {out_bad}"
+    assert (
+        "type mismatch" in out_bad.lower() or "expected str" in out_bad.lower()
+    ), f"Expected type mismatch error for /email_bad, got: {out_bad}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -236,15 +280,23 @@ def test_email_endpoint_passes():
     time.sleep(0.5)
 
     result = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-email-server:8000", "-k", "email and not bad", "-v"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-email-server:8000",
+            "-k",
+            "email and not bad",
+            "-v",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
 
     output = result.stdout + result.stderr
-    assert "✅ OpenAPI spec validated successfully" in output or result.returncode == 0, \
-        f"Expected /email to validate successfully, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+        or result.returncode == 0
+    ), f"Expected /email to validate successfully, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -254,7 +306,13 @@ def test_email_bad_detected():
     time.sleep(0.5)
 
     result = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-email-server:8000", "-k", "email_bad", "-v"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-email-server:8000",
+            "-k",
+            "email_bad",
+            "-v",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
@@ -262,8 +320,9 @@ def test_email_bad_detected():
 
     output = result.stdout + result.stderr
     assert result.returncode != 0, f"Expected /email_bad to fail, got: {output}"
-    assert "type mismatch" in output.lower() or "expected str" in output.lower(), \
-        f"Expected type mismatch error for /email_bad, got: {output}"
+    assert (
+        "type mismatch" in output.lower() or "expected str" in output.lower()
+    ), f"Expected type mismatch error for /email_bad, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -273,15 +332,20 @@ def test_put_response_missing_key_detected():
     time.sleep(0.5)
 
     result = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-put-response-missing-key:8000", "-v"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-put-response-missing-key:8000",
+            "-v",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
 
     output = result.stdout + result.stderr
-    assert "missing key" in output.lower() or "updated" in output.lower(), \
-        f"Expected error about missing key 'updated', got: {output}"
+    assert (
+        "missing key" in output.lower() or "updated" in output.lower()
+    ), f"Expected error about missing key 'updated', got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -291,15 +355,20 @@ def test_delete_wrong_status_detected():
     time.sleep(0.5)
 
     result = subprocess.run(
-        ["pytest", "--openapi=http://mock-server-delete-wrong-status:8000", "-v"],
+        [
+            "pytest",
+            "--openapi=http://mock-server-delete-wrong-status:8000",
+            "-v",
+        ],
         capture_output=True,
         text=True,
         cwd="/app",
     )
 
     output = result.stdout + result.stderr
-    assert "500" in output, \
-        f"Expected error mentioning status code 500, got: {output}"
+    assert (
+        "500" in output
+    ), f"Expected error mentioning status code 500, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -319,17 +388,26 @@ def test_schema_based_api_generates_examples():
 
     # Should succeed - generated examples should work
     # Exit code is 0 because contract tests pass, then regular tests in /app are collected and pass
-    assert result.returncode == 0, \
-        f"Expected schema-based API to pass with generated examples. Expected: exit code 0, got: {result.returncode}"
+    assert (
+        result.returncode == 0
+    ), f"Expected schema-based API to pass with generated examples. Expected: exit code 0, got: {result.returncode}"
 
     # Check for validation success
-    assert "✅ OpenAPI spec validated successfully" in output, \
-        f"Expected validation success, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected validation success, got: {output}"
 
     # Check that regular tests in /app were also collected and ran
-    assert "test_samples" in output and "3 passed" in output, \
-        f"Expected regular tests to also run, got: {output}"
+    assert (
+        "test_samples" in output and "3 passed" in output
+    ), f"Expected regular tests to also run, got: {output}"
 
     # Count contract test entries (they are printed as 'Test #N')
-    contract_tests = [line for line in output.splitlines() if line.strip().startswith("Test #")]
-    assert len(contract_tests) >= 10, f"Expected at least 10 contract tests, found {len(contract_tests)}\nOutput:\n{output}"
+    contract_tests = [
+        line
+        for line in output.splitlines()
+        if line.strip().startswith("Test #")
+    ]
+    assert (
+        len(contract_tests) >= 10
+    ), f"Expected at least 10 contract tests, found {len(contract_tests)}\nOutput:\n{output}"

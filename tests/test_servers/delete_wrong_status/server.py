@@ -24,9 +24,7 @@ def openapi():
                                 "schema": {"type": "integer"},
                             }
                         ],
-                        "responses": {
-                            "204": {"description": "Record deleted"}
-                        },
+                        "responses": {"204": {"description": "Record deleted"}},
                     }
                 }
             },

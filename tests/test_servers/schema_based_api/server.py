@@ -25,36 +25,43 @@ def openapi():
                                         "properties": {
                                             "string_field": {
                                                 "type": "string",
-                                                "description": "A basic string field"
+                                                "description": "A basic string field",
                                             },
                                             "email_field": {
                                                 "type": "string",
                                                 "format": "email",
-                                                "description": "An email address"
+                                                "description": "An email address",
                                             },
                                             "integer_field": {
                                                 "type": "integer",
                                                 "minimum": 1,
                                                 "maximum": 100,
-                                                "description": "An integer between 1 and 100"
+                                                "description": "An integer between 1 and 100",
                                             },
                                             "number_field": {
                                                 "type": "number",
                                                 "minimum": 0.0,
                                                 "maximum": 1.0,
-                                                "description": "A float between 0 and 1"
+                                                "description": "A float between 0 and 1",
                                             },
                                             "boolean_field": {
                                                 "type": "boolean",
-                                                "description": "A boolean value"
+                                                "description": "A boolean value",
                                             },
                                             "enum_field": {
                                                 "type": "string",
-                                                "enum": ["option1", "option2", "option3"],
-                                                "description": "An enum field"
-                                            }
+                                                "enum": [
+                                                    "option1",
+                                                    "option2",
+                                                    "option3",
+                                                ],
+                                                "description": "An enum field",
+                                            },
                                         },
-                                        "required": ["string_field", "integer_field"]
+                                        "required": [
+                                            "string_field",
+                                            "integer_field",
+                                        ],
                                     }
                                     # Note: NO example here! Testing schema-based generation
                                 }
@@ -67,7 +74,7 @@ def openapi():
                                     "application/json": {
                                         "example": {
                                             "id": 123,
-                                            "status": "success"
+                                            "status": "success",
                                         }
                                     }
                                 },
