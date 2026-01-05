@@ -1,5 +1,7 @@
 ![Tests & Lint](https://github.com/sinan-ozel/pytest-openapi/actions/workflows/ci.yaml/badge.svg?branch=main)
 ![PyPI](https://img.shields.io/pypi/v/pytest-openapi.svg)
+![Downloads](https://static.pepy.tech/badge/pytest-openapi)
+![Monthly Downloads](https://static.pepy.tech/badge/pytest-openapi/month)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://sinan-ozel.github.io/pytest-openapi/)
 ![License](https://img.shields.io/github/license/sinan-ozel/pytest-openapi.svg)
 
