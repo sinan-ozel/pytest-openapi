@@ -184,7 +184,9 @@ def create_order():
     data = request.get_json()
 
     # Calculate total
-    total = sum(item["quantity"] * item["price"] for item in data.get("items", []))
+    total = sum(
+        item["quantity"] * item["price"] for item in data.get("items", [])
+    )
 
     return (
         jsonify(

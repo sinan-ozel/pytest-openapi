@@ -28,7 +28,7 @@ def openapi():
                                         "properties": {
                                             "text": {
                                                 "type": "string",
-                                                "description": "Comment text"
+                                                "description": "Comment text",
                                             }
                                         },
                                     },
@@ -46,11 +46,11 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "Comment ID"
+                                                    "description": "Comment ID",
                                                 },
                                                 "text": {
                                                     "type": "string",
-                                                    "description": "Comment text"
+                                                    "description": "Comment text",
                                                 },
                                             },
                                         },

@@ -28,7 +28,7 @@ def openapi():
                                         "properties": {
                                             "title": {
                                                 "type": "string",
-                                                "description": "Task title"
+                                                "description": "Task title",
                                             }
                                         },
                                     },
@@ -46,15 +46,15 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "Task ID"
+                                                    "description": "Task ID",
                                                 },
                                                 "title": {
                                                     "type": "string",
-                                                    "description": "Task title"
+                                                    "description": "Task title",
                                                 },
                                                 "status": {
                                                     "type": "string",
-                                                    "description": "Task status"
+                                                    "description": "Task status",
                                                 },
                                             },
                                         },

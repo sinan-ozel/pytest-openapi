@@ -14,12 +14,7 @@ def health():
 @app.route("/users", methods=["GET"])
 def get_users():
     """Example endpoint that exists but has no OpenAPI documentation."""
-    return jsonify(
-        [
-            {"id": 1, "name": "Alice"},
-            {"id": 2, "name": "Bob"}
-        ]
-    )
+    return jsonify([{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}])
 
 
 if __name__ == "__main__":

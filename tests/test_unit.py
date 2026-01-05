@@ -43,8 +43,8 @@ def test_schema_based_test_case_generation():
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "age": {"type": "integer", "minimum": 0, "maximum": 120}
-        }
+            "age": {"type": "integer", "minimum": 0, "maximum": 120},
+        },
     }
     test_cases, warnings = generate_test_cases_for_schema(schema)
     assert len(test_cases) > 0
@@ -59,7 +59,7 @@ def test_schema_based_test_case_generation():
         "type": "array",
         "items": {"type": "string"},
         "minItems": 1,
-        "maxItems": 3
+        "maxItems": 3,
     }
     test_cases, warnings = generate_test_cases_for_schema(schema)
     assert len(test_cases) > 0
@@ -86,7 +86,9 @@ def test_string_edge_cases():
     # Check for edge cases (at least some should be present)
     test_cases_str = " ".join(str(e) for e in test_cases)
     # We expect variety: quotes, special chars, etc.
-    assert any('"' in str(e) or "'" in str(e) or ":" in str(e) for e in test_cases)
+    assert any(
+        '"' in str(e) or "'" in str(e) or ":" in str(e) for e in test_cases
+    )
 
 
 def test_integer_boundary_testing():

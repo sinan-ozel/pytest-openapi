@@ -28,7 +28,7 @@ def openapi():
                                         "properties": {
                                             "text": {
                                                 "type": "string",
-                                                "description": "Note text"
+                                                "description": "Note text",
                                             }
                                         },
                                     },
@@ -46,17 +46,17 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "Note ID"
+                                                    "description": "Note ID",
                                                 },
                                                 "text": {
                                                     "type": "string",
-                                                    "description": "Note text"
+                                                    "description": "Note text",
                                                 },
                                             },
                                         },
                                         "example": {
                                             "id": 1,
-                                            "text": "Meeting notes"
+                                            "text": "Meeting notes",
                                         },
                                     }
                                 },

@@ -26,15 +26,15 @@ def openapi():
                                             "properties": {
                                                 "id": {
                                                     "type": "integer",
-                                                    "description": "Product ID"
+                                                    "description": "Product ID",
                                                 },
                                                 "name": {
                                                     "type": "string",
-                                                    "description": "Product name"
+                                                    "description": "Product name",
                                                 },
                                                 "price": {
                                                     "type": "number",
-                                                    "description": "Product price"
+                                                    "description": "Product price",
                                                 },
                                             },
                                         },
