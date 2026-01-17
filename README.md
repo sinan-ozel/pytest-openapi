@@ -125,5 +125,5 @@ Please submit a pull request or open an issue for any bugs or feature requests.
 The moment your PR is merged, you get a dev release. You can then set up the version number to use your changes.
 
 # License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+MIT License. See [LICENSE](LICENSE) file for the specific wording.
 
