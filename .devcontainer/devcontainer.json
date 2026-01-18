@@ -3,7 +3,6 @@
   "dockerComposeFile": [
     "docker-compose.yaml"
   ],
-  "service": "dev",
   "workspaceFolder": "/workspace",
   "containerEnv": {
     "HOST_PROJECT_PATH": "${localWorkspaceFolder}"
@@ -20,7 +19,8 @@
   "customizations": {
     "vscode": {
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash"
       },
       "extensions": [
         "github.copilot",
@@ -37,5 +37,6 @@
       ]
     }
   },
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "service": "dev"
 }
