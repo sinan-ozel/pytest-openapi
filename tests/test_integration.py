@@ -411,3 +411,56 @@ def test_schema_based_api_generates_examples():
     assert (
         len(contract_tests) >= 10
     ), f"Expected at least 10 contract tests, found {len(contract_tests)}\nOutput:\n{output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_post_501_undocumented_fails():
+    """Test that 501 response fails when not documented in OpenAPI spec."""
+    print("\n🔍 Testing POST 501 undocumented detection...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-501-undocumented:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode != 0
+    ), f"Expected test to fail for undocumented 501, got: {output}"
+    assert (
+        "501" in output
+    ), f"Expected error mentioning status code 501, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_post_501_documented_passes():
+    """Test that 501 response passes when documented in OpenAPI spec."""
+    print("\n🔍 Testing POST 501 documented acceptance...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-501-documented:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode == 0
+    ), f"Expected test to pass for documented 501, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+        or "✅ All contract tests passed!" in output
+    ), f"Expected validation success, got: {output}"

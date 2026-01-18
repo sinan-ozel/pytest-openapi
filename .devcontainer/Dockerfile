@@ -30,3 +30,6 @@ RUN pip install --upgrade pip
 RUN pip install -e .[test]
 RUN pip install -e .[dev]
 RUN pip install -e .[docs]
+
+SHELL ["/bin/bash", "-c"]
+
