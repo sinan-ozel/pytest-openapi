@@ -35,7 +35,10 @@ def openapi():
                                         },
                                         "required": ["prompt"],
                                     },
-                                    "example": {"prompt": "Hello", "stream": False},
+                                    "example": {
+                                        "prompt": "Hello",
+                                        "stream": False,
+                                    },
                                 }
                             },
                         },

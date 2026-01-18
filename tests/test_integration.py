@@ -431,7 +431,9 @@ def test_post_501_undocumented_fails():
     )
 
     output = result.stdout + result.stderr
-    assert result.returncode != 0, f"Expected test to fail for undocumented 501, got: {output}"
+    assert (
+        result.returncode != 0
+    ), f"Expected test to fail for undocumented 501, got: {output}"
     assert (
         "501" in output
     ), f"Expected error mentioning status code 501, got: {output}"
@@ -462,4 +464,3 @@ def test_post_501_documented_passes():
         "✅ OpenAPI spec validated successfully" in output
         or "✅ All contract tests passed!" in output
     ), f"Expected validation success, got: {output}"
-
