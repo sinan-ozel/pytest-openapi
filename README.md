@@ -5,6 +5,7 @@
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://sinan-ozel.github.io/pytest-openapi/)
 ![License](https://img.shields.io/github/license/sinan-ozel/pytest-openapi.svg)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
+![Made with Love](https://img.shields.io/badge/Made%20with-❤️-red)
 
 # 🧪 OpenAPI Contract Tester
 

@@ -194,6 +194,32 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-post-501-undocumented:
+    build:
+      context: test_servers/post_501_undocumented
+      dockerfile: Dockerfile
+    image: mock-server-post-501-undocumented:latest
+    ports:
+      - "8016:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-post-501-documented:
+    build:
+      context: test_servers/post_501_documented
+      dockerfile: Dockerfile
+    image: mock-server-post-501-documented:latest
+    ports:
+      - "8017:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..
