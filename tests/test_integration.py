@@ -469,7 +469,10 @@ def test_post_501_documented_passes():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_example_value_mismatch_fails_strict():
     """Test that example value mismatch fails with strict checking (default)."""
-    print("\n🔍 Testing example value mismatch with strict checking...", flush=True)
+    print(
+        "\n🔍 Testing example value mismatch with strict checking...",
+        flush=True,
+    )
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -495,7 +498,10 @@ def test_example_value_mismatch_fails_strict():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_example_value_mismatch_passes_lenient():
     """Test that example value mismatch passes with --openapi-no-strict-example-checking."""
-    print("\n🔍 Testing example value mismatch with lenient checking...", flush=True)
+    print(
+        "\n🔍 Testing example value mismatch with lenient checking...",
+        flush=True,
+    )
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -523,7 +529,10 @@ def test_example_value_mismatch_passes_lenient():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_put_example_value_mismatch_fails_strict():
     """Test that PUT with example value mismatch fails with strict checking (default)."""
-    print("\n🔍 Testing PUT example value mismatch with strict checking...", flush=True)
+    print(
+        "\n🔍 Testing PUT example value mismatch with strict checking...",
+        flush=True,
+    )
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -550,7 +559,10 @@ def test_put_example_value_mismatch_fails_strict():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_put_example_value_mismatch_passes_lenient():
     """Test that PUT with example value mismatch passes with --openapi-no-strict-example-checking."""
-    print("\n🔍 Testing PUT example value mismatch with lenient checking...", flush=True)
+    print(
+        "\n🔍 Testing PUT example value mismatch with lenient checking...",
+        flush=True,
+    )
     time.sleep(0.5)
 
     result = subprocess.run(

@@ -50,7 +50,12 @@ def openapi():
                                     "application/json": {
                                         "schema": {
                                             "type": "object",
-                                            "required": ["response", "done", "context", "eval_count"],
+                                            "required": [
+                                                "response",
+                                                "done",
+                                                "context",
+                                                "eval_count",
+                                            ],
                                             "properties": {
                                                 "response": {
                                                     "type": "string",
@@ -62,7 +67,9 @@ def openapi():
                                                 },
                                                 "context": {
                                                     "type": "array",
-                                                    "items": {"type": "integer"},
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
                                                     "description": "Context tokens",
                                                 },
                                                 "total_duration": {
@@ -164,7 +171,12 @@ def openapi():
                                 "application/json": {
                                     "schema": {
                                         "type": "object",
-                                        "required": ["config_id", "name", "value", "history"],
+                                        "required": [
+                                            "config_id",
+                                            "name",
+                                            "value",
+                                            "history",
+                                        ],
                                         "properties": {
                                             "config_id": {
                                                 "type": "integer",
