@@ -220,6 +220,19 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-example-value-mismatch:
+    build:
+      context: test_servers/example_value_mismatch
+      dockerfile: Dockerfile
+    image: mock-server-example-value-mismatch:latest
+    ports:
+      - "8018:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..

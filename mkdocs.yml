@@ -98,6 +98,7 @@ nav:
   - How It Works:
       - Execution Flow: how-it-works/flow.md
       - Test Case Generation: how-it-works/test-cases.md
+      - Validation Modes: how-it-works/validation-modes.md
       - Path Parameter Resolution: how-it-works/path-params.md
   - Modules:
       - openapi.py: modules/openapi.md

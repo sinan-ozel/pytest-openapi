@@ -464,3 +464,112 @@ def test_post_501_documented_passes():
         "✅ OpenAPI spec validated successfully" in output
         or "✅ All contract tests passed!" in output
     ), f"Expected validation success, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_example_value_mismatch_fails_strict():
+    """Test that example value mismatch fails with strict checking (default)."""
+    print("\n🔍 Testing example value mismatch with strict checking...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-example-value-mismatch:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode != 0
+    ), f"Expected test to fail with strict example checking (default), got: {output}"
+    assert (
+        "List length mismatch" in output or "mismatch" in output.lower()
+    ), f"Expected error about value/length mismatch, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_example_value_mismatch_passes_lenient():
+    """Test that example value mismatch passes with --openapi-no-strict-example-checking."""
+    print("\n🔍 Testing example value mismatch with lenient checking...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-example-value-mismatch:8000",
+            "--openapi-no-strict-example-checking",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode == 0
+    ), f"Expected test to pass with lenient example checking, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+        or "✅ All contract tests passed!" in output
+    ), f"Expected validation success, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_put_example_value_mismatch_fails_strict():
+    """Test that PUT with example value mismatch fails with strict checking (default)."""
+    print("\n🔍 Testing PUT example value mismatch with strict checking...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-example-value-mismatch:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode != 0
+    ), f"Expected test to fail with strict example checking (default), got: {output}"
+    # Should have failures for both POST and PUT endpoints
+    assert (
+        "PUT /config" in output or "mismatch" in output.lower()
+    ), f"Expected error about PUT endpoint mismatch, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_put_example_value_mismatch_passes_lenient():
+    """Test that PUT with example value mismatch passes with --openapi-no-strict-example-checking."""
+    print("\n🔍 Testing PUT example value mismatch with lenient checking...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-example-value-mismatch:8000",
+            "--openapi-no-strict-example-checking",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode == 0
+    ), f"Expected test to pass with lenient example checking for PUT, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+        or "✅ All contract tests passed!" in output
+    ), f"Expected validation success, got: {output}"

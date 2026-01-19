@@ -87,6 +87,29 @@ Say that you have a service running at port `8000` on `localhost`. Then, run:
 pytest --openapi=http://localhost:8000
 ```
 
+### Options
+
+- `--openapi=BASE_URL`: Run contract tests against the API at the specified base URL
+- `--openapi-no-strict-example-checking`: Use lenient validation for example-based tests
+
+#### Strict vs Lenient Example Checking
+
+By default, pytest-openapi performs **strict matching** on example-based tests:
+- When your OpenAPI spec includes explicit request/response examples, the actual response must match the example values exactly
+- This ensures examples accurately reflect real API behavior
+
+However, sometimes examples contain placeholder values (like `[1, 2, 3]`) that don't match actual responses (like `[]`). Use `--openapi-no-strict-example-checking` for lenient validation:
+
+```bash
+pytest --openapi=http://localhost:8000 --openapi-no-strict-example-checking
+```
+
+**Lenient mode** validates:
+- Structure and types match (all expected keys present, correct types)
+- But ignores exact values and array lengths
+
+**Note**: Schema-generated tests always use schema validation (not affected by this flag).
+
 ## Server
 See here an example server - `email-server`: [tests/test_servers/email_server/server.py](tests/test_servers/email_server/server.py)
 

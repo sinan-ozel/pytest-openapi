@@ -10,6 +10,12 @@ def pytest_addoption(parser):
         metavar="BASE_URL",
         help="Run OpenAPI contract tests against the specified base URL",
     )
+    group.addoption(
+        "--openapi-no-strict-example-checking",
+        action="store_true",
+        default=False,
+        help="Use lenient schema validation for example responses instead of strict matching",
+    )
 
 
 def pytest_configure(config):
@@ -21,6 +27,9 @@ def pytest_configure(config):
 
     # If --openapi flag is provided, validate and test the OpenAPI spec
     base_url = config.getoption("--openapi")
+    strict_examples = not config.getoption(
+        "--openapi-no-strict-example-checking"
+    )
     if base_url:
         import pytest
         import requests
@@ -59,19 +68,19 @@ def pytest_configure(config):
                 # Select appropriate test function
                 if method == "get":
                     success, error = test_get_endpoint(
-                        base_url, path, operation
+                        base_url, path, operation, strict_examples
                     )
                 elif method == "post":
                     success, error = test_post_endpoint(
-                        base_url, path, operation
+                        base_url, path, operation, strict_examples
                     )
                 elif method == "put":
                     success, error = test_put_endpoint(
-                        base_url, path, operation
+                        base_url, path, operation, strict_examples
                     )
                 elif method == "delete":
                     success, error = test_delete_endpoint(
-                        base_url, path, operation
+                        base_url, path, operation, strict_examples
                     )
 
                 if not success:
