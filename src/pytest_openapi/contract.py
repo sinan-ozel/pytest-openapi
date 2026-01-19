@@ -48,6 +48,7 @@ def log_test_result(
     actual_body,
     success,
     error_message=None,
+    test_case_origin=None,
 ):
     """Log a test result for the final report.
 
@@ -61,6 +62,7 @@ def log_test_result(
         actual_body: Actual response body
         success: Whether the test passed
         error_message: Error message if test failed
+        test_case_origin: Origin of test case ('example' or 'generated')
     """
     report = {
         "method": method,
@@ -72,6 +74,7 @@ def log_test_result(
         "actual_body": actual_body,
         "success": success,
         "error_message": error_message,
+        "test_case_origin": test_case_origin,
     }
     test_reports.append(report)
 
@@ -94,6 +97,15 @@ def get_test_report():
     for i, test in enumerate(test_reports, 1):
         status_symbol = "✅" if test["success"] else "❌"
         report_lines.append(f"Test #{i} {status_symbol}")
+
+        # Display test case origin if available
+        if test.get("test_case_origin"):
+            origin = test["test_case_origin"]
+            if origin == "example":
+                report_lines.append("📋 Test case from OpenAPI example")
+            elif origin == "generated":
+                report_lines.append("🔧 Test case generated from schema")
+
         report_lines.append(f"{test['method']} {test['path']}")
 
         if test["request_body"] is not None:
@@ -416,6 +428,7 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
             None,
             False,
             error_msg,
+            "example",
         )
         return False, error_msg
 
@@ -435,6 +448,8 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
             response.status_code,
             actual_response,
             True,
+            None,
+            "example",
         )
         return True, None
 
@@ -450,6 +465,7 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
             actual_response,
             False,
             error_msg,
+            "example",
         )
         return False, error_msg
 
@@ -481,6 +497,7 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
             actual_response,
             False,
             error,
+            "example",
         )
         return False, error
 
@@ -493,6 +510,8 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
         response.status_code,
         actual_response,
         True,
+        None,
+        "example",
     )
     return True, None
 
@@ -623,6 +642,7 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
                 None,
                 False,
                 error_msg,
+                test_origin,
             )
             errors.append(error_msg)
             continue
@@ -645,6 +665,8 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
                 response.status_code,
                 actual_response,
                 True,
+                None,
+                test_origin,
             )
             continue
 
@@ -660,6 +682,7 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
                 actual_response,
                 False,
                 error_msg,
+                test_origin,
             )
             errors.append(error_msg)
             continue
@@ -691,6 +714,7 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
                 actual_response,
                 False,
                 error,
+                test_origin,
             )
             errors.append(error)
             continue
@@ -704,6 +728,8 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
             response.status_code,
             actual_response,
             True,
+            None,
+            test_origin,
         )
 
     if errors:
@@ -862,6 +888,7 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
                 None,
                 False,
                 error_msg,
+                test_origin,
             )
             errors.append(error_msg)
             continue
@@ -882,6 +909,8 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
                 response.status_code,
                 actual_response,
                 True,
+                None,
+                test_origin,
             )
             continue
 
@@ -897,6 +926,7 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
                 actual_response,
                 False,
                 error_msg,
+                test_origin,
             )
             errors.append(error_msg)
             continue
@@ -928,6 +958,7 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
                 actual_response,
                 False,
                 error,
+                test_origin,
             )
             errors.append(error)
             continue
@@ -941,6 +972,8 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
             response.status_code,
             actual_response,
             True,
+            None,
+            test_origin,
         )
 
     if errors:
@@ -1069,6 +1102,7 @@ def test_delete_endpoint(base_url, path, operation, strict_examples=True):
             None,
             False,
             error_msg,
+            "example",
         )
         return False, error_msg
 
@@ -1091,6 +1125,8 @@ def test_delete_endpoint(base_url, path, operation, strict_examples=True):
             response.status_code,
             actual_response,
             True,
+            None,
+            "example",
         )
         return True, None
 
@@ -1106,6 +1142,7 @@ def test_delete_endpoint(base_url, path, operation, strict_examples=True):
             actual_response,
             False,
             error_msg,
+            "example",
         )
         return False, error_msg
 
@@ -1118,5 +1155,7 @@ def test_delete_endpoint(base_url, path, operation, strict_examples=True):
         response.status_code,
         actual_response,
         True,
+        None,
+        "example",
     )
     return True, None

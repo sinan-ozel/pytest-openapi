@@ -99,6 +99,11 @@ def test_valid_api_passes():
         or "✅ All contract tests passed!" in output
     ), f"Expected validation success, got: {output}"
 
+    # Check that tests are labeled as coming from OpenAPI examples
+    assert (
+        "📋 Test case from OpenAPI example" in output
+    ), f"Expected to see '📋 Test case from OpenAPI example' label in output, got: {output}"
+
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_get_missing_key_detected():
@@ -411,6 +416,11 @@ def test_schema_based_api_generates_examples():
     assert (
         len(contract_tests) >= 10
     ), f"Expected at least 10 contract tests, found {len(contract_tests)}\nOutput:\n{output}"
+
+    # Check that tests are labeled as generated from schema
+    assert (
+        "🔧 Test case generated from schema" in output
+    ), f"Expected to see '🔧 Test case generated from schema' label in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
