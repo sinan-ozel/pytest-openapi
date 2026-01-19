@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-01-18
+
+### Added
+- New `--openapi-no-strict-example-checking` flag for lenient example validation
+- Schema-based validation function `validate_against_schema()` for proper JSON Schema checking
+- Hybrid validation approach: strict matching for examples, schema validation for generated tests
+- Test tracking to distinguish between example-based and schema-generated test cases
+- Lenient comparison mode that validates structure and types without enforcing exact values
+
+### Changed
+- Example-based tests now support both strict (default) and lenient validation modes
+- Schema-generated tests now use proper JSON Schema validation instead of example comparison
+- Improved array validation to check element types without enforcing exact lengths in lenient mode
+
+### Fixed
+- Example values no longer incorrectly fail when structure matches but values differ (with lenient mode)
+- Array length mismatches in examples now properly handled in lenient mode
+
 ## [0.1.1] - 2026-01-18
 
 ### Added

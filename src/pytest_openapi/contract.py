@@ -141,19 +141,107 @@ def get_test_report():
     return "\n".join(report_lines)
 
 
-def compare_responses(expected, actual):
+def validate_against_schema(schema, actual, path=""):
+    """Validate actual response against JSON schema.
+
+    Args:
+        schema: JSON schema object
+        actual: Actual response data
+        path: Current path in object (for error messages)
+
+    Returns:
+        tuple: (valid: bool, error_message: str or None)
+    """
+    schema_type = schema.get("type")
+
+    # Check type
+    if schema_type == "object":
+        if not isinstance(actual, dict):
+            return (
+                False,
+                f"{path}: Expected object, got {type(actual).__name__}",
+            )
+
+        # Check required properties
+        required = schema.get("required", [])
+        for prop in required:
+            if prop not in actual:
+                return False, f"{path}: Missing required property '{prop}'"
+
+        # Validate properties
+        properties = schema.get("properties", {})
+        for prop, prop_schema in properties.items():
+            if prop in actual:
+                valid, error = validate_against_schema(
+                    prop_schema,
+                    actual[prop],
+                    f"{path}.{prop}" if path else prop,
+                )
+                if not valid:
+                    return False, error
+
+    elif schema_type == "array":
+        if not isinstance(actual, list):
+            return False, f"{path}: Expected array, got {type(actual).__name__}"
+
+        # Validate items
+        items_schema = schema.get("items", {})
+        for i, item in enumerate(actual):
+            valid, error = validate_against_schema(
+                items_schema, item, f"{path}[{i}]"
+            )
+            if not valid:
+                return False, error
+
+    elif schema_type == "string":
+        if not isinstance(actual, str):
+            return (
+                False,
+                f"{path}: Expected string, got {type(actual).__name__}",
+            )
+
+    elif schema_type == "number":
+        if not isinstance(actual, (int, float)):
+            return (
+                False,
+                f"{path}: Expected number, got {type(actual).__name__}",
+            )
+
+    elif schema_type == "integer":
+        if not isinstance(actual, int) or isinstance(actual, bool):
+            return (
+                False,
+                f"{path}: Expected integer, got {type(actual).__name__}",
+            )
+
+    elif schema_type == "boolean":
+        if not isinstance(actual, bool):
+            return (
+                False,
+                f"{path}: Expected boolean, got {type(actual).__name__}",
+            )
+
+    return True, None
+
+
+def compare_responses(expected, actual, strict=True):
     """Compare expected and actual responses with detailed error
     messages.
 
     Args:
         expected: Expected response (from OpenAPI example)
         actual: Actual response from API
+        strict: If False, only validate structure/types (lenient mode)
 
     Returns:
         tuple: (matches: bool, error_message: str or None)
     """
     if expected == actual:
         return True, None
+
+    # In lenient mode, only check structure and types, not exact values
+    if not strict:
+        return compare_structure(expected, actual)
 
     # Check for missing keys in actual
     if isinstance(expected, dict) and isinstance(actual, dict):
@@ -212,14 +300,59 @@ def compare_responses(expected, actual):
     return False, f"Response mismatch.\nExpected: {expected}\nActual: {actual}"
 
 
-def test_get_endpoint(base_url, path, operation):
+def compare_structure(expected, actual):
+    """Compare structure and types only (lenient mode).
+
+    Args:
+        expected: Expected response (used for structure reference)
+        actual: Actual response from API
+
+    Returns:
+        tuple: (matches: bool, error_message: str or None)
+    """
+    # Check types match
+    if type(expected).__name__ != type(actual).__name__:
+        return (
+            False,
+            f"Type mismatch: expected {type(expected).__name__}, got {type(actual).__name__}",
+        )
+
+    if isinstance(expected, dict):
+        # Check all expected keys exist
+        for key in expected:
+            if key not in actual:
+                return False, f"Missing key in actual response: '{key}'"
+
+        # Recursively check structure of nested values
+        for key in expected:
+            if key in actual:
+                matches, error = compare_structure(expected[key], actual[key])
+                if not matches:
+                    return False, error
+
+        return True, None
+
+    elif isinstance(expected, list):
+        # For arrays, just check that element types are compatible
+        # Don't enforce length or exact values
+        if len(expected) > 0 and len(actual) > 0:
+            # Check first element structure
+            matches, error = compare_structure(expected[0], actual[0])
+            if not matches:
+                return False, f"Array element structure mismatch: {error}"
+        return True, None
+
+    # For primitives, just check type (already done above)
+    return True, None
+
+
+def test_get_endpoint(base_url, path, operation, strict_examples=True):
     """Test a GET endpoint using the example from the OpenAPI spec.
 
     Args:
         base_url: Base URL of the API server
         path: API endpoint path
-        operation: OpenAPI operation object
-
+        operation: OpenAPI operation object        strict_examples: If True, strictly match example responses; if False, only validate structure
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
@@ -239,32 +372,34 @@ def test_get_endpoint(base_url, path, operation):
             pass  # Skip non-numeric status codes like 'default'
 
     expected_response = None
+    response_schema = None
+    is_example_based = False
+
     for media_type, media_obj in content.items():
         if "example" in media_obj:
             expected_response = media_obj["example"]
+            is_example_based = True
+            # Also extract schema if present for schema-generated tests
+            if "schema" in media_obj:
+                response_schema = media_obj["schema"]
             break
         elif "examples" in media_obj:
             examples = media_obj["examples"]
             if examples:
                 first_example = next(iter(examples.values()))
                 expected_response = first_example.get("value")
-                break
-        elif "schema" in media_obj:
-            # Generate test cases from schema
-            schema = media_obj["schema"]
-            response_test_cases, warnings = generate_test_cases_for_schema(
-                schema
-            )
-            if warnings:
-                print(f"\nWarning for GET {path} response schema:")
-                for warning in warnings:
-                    print(f"  - {warning}")
-            if response_test_cases:
-                expected_response = response_test_cases[0]
+                is_example_based = True
+                # Also extract schema if present for schema-generated tests
+                if "schema" in media_obj:
+                    response_schema = media_obj["schema"]
                 break
 
+    # We are opinionated: examples are required
     if expected_response is None:
-        return False, "No example or schema found for 200 response"
+        return (
+            False,
+            "No example found for 200 response. Examples are required.",
+        )
 
     # Make the GET request
     try:
@@ -318,8 +453,23 @@ def test_get_endpoint(base_url, path, operation):
         )
         return False, error_msg
 
-    # Check response matches example
-    matches, error = compare_responses(expected_response, actual_response)
+    # Check response matches example or schema
+    if is_example_based:
+        # Example-based test: use strict or lenient matching based on flag
+        matches, error = compare_responses(
+            expected_response, actual_response, strict=strict_examples
+        )
+    elif response_schema:
+        # Schema-generated test: always use schema validation
+        matches, error = validate_against_schema(
+            response_schema, actual_response
+        )
+    else:
+        # Fallback to strict comparison
+        matches, error = compare_responses(
+            expected_response, actual_response, strict=True
+        )
+
     if not matches:
         log_test_result(
             "GET",
@@ -347,7 +497,7 @@ def test_get_endpoint(base_url, path, operation):
     return True, None
 
 
-def test_post_endpoint(base_url, path, operation):
+def test_post_endpoint(base_url, path, operation, strict_examples=True):
     """Test a POST endpoint using examples from OpenAPI spec AND
     generated test cases from schema.
 
@@ -355,6 +505,7 @@ def test_post_endpoint(base_url, path, operation):
         base_url: Base URL of the API server
         path: API endpoint path
         operation: OpenAPI operation object
+        strict_examples: If True, strictly match example responses; if False, only validate structure
 
     Returns:
         tuple: (success: bool, error_message: str or None)
@@ -362,7 +513,11 @@ def test_post_endpoint(base_url, path, operation):
     url = f"{base_url}{path}"
 
     # Collect ALL test cases: both from examples AND generated from schema
+    # Track which are example-based vs schema-generated
     request_test_cases = []
+    test_case_origins = (
+        []
+    )  # Track if each test case is 'example' or 'generated'
     warnings = []
 
     request_body = operation.get("requestBody", {})
@@ -372,11 +527,13 @@ def test_post_endpoint(base_url, path, operation):
         # Collect explicit examples
         if "example" in media_obj:
             request_test_cases.append(media_obj["example"])
+            test_case_origins.append("example")
         if "examples" in media_obj:
             examples_dict = media_obj["examples"]
             for ex_name, ex_obj in examples_dict.items():
                 if "value" in ex_obj:
                     request_test_cases.append(ex_obj["value"])
+                    test_case_origins.append("example")
 
         # Also generate test cases from schema
         if "schema" in media_obj:
@@ -389,7 +546,9 @@ def test_post_endpoint(base_url, path, operation):
                     warnings.extend(warning)
                 else:
                     warnings.append(warning)
-            request_test_cases.extend(generated)
+            for gen_case in generated:
+                request_test_cases.append(gen_case)
+                test_case_origins.append("generated")
         break
 
     if not request_test_cases:
@@ -405,6 +564,8 @@ def test_post_endpoint(base_url, path, operation):
     content = response_200.get("content", {})
 
     expected_response = None
+    response_schema = None
+    response_is_example_based = False
     expected_status = 201 if "201" in responses else 200
 
     # Get all documented response status codes
@@ -419,34 +580,34 @@ def test_post_endpoint(base_url, path, operation):
         # Prefer explicit example
         if "example" in media_obj:
             expected_response = media_obj["example"]
+            response_is_example_based = True
+            # Also extract schema if present for schema-generated tests
+            if "schema" in media_obj:
+                response_schema = media_obj["schema"]
             break
         elif "examples" in media_obj:
             examples_dict = media_obj["examples"]
             if examples_dict:
                 first_example = next(iter(examples_dict.values()))
                 expected_response = first_example.get("value")
+                response_is_example_based = True
+                # Also extract schema if present for schema-generated tests
+                if "schema" in media_obj:
+                    response_schema = media_obj["schema"]
                 break
-        elif "schema" in media_obj:
-            # Generate test case from response schema
-            schema = media_obj["schema"]
-            generated, warning = generate_test_cases_for_schema(
-                schema, "response_body"
-            )
-            if warning:
-                if isinstance(warning, list):
-                    warnings.extend(warning)
-                else:
-                    warnings.append(warning)
-            if generated:
-                expected_response = generated[0]
-            break
 
+    # We are opinionated: examples are required
     if expected_response is None:
-        return False, "No example or schema found for 200/201 response"
+        return (
+            False,
+            "No example found for 200/201 response. Examples are required.",
+        )
 
     # Test with all collected test cases (examples + generated)
     errors = []
-    for request_test_case in request_test_cases:
+    for request_test_case, test_origin in zip(
+        request_test_cases, test_case_origins
+    ):
         # Make the POST request
         try:
             response = make_request("POST", url, json=request_test_case)
@@ -503,8 +664,22 @@ def test_post_endpoint(base_url, path, operation):
             errors.append(error_msg)
             continue
 
-        # Check response matches example
-        matches, error = compare_responses(expected_response, actual_response)
+        # Check response matches example or schema
+        # If request is example-based AND response has example, use strict/lenient matching
+        # If request is schema-generated, always use schema validation for response
+        if test_origin == "example" and response_is_example_based:
+            matches, error = compare_responses(
+                expected_response, actual_response, strict=strict_examples
+            )
+        elif response_schema:
+            matches, error = validate_against_schema(
+                response_schema, actual_response
+            )
+        else:
+            matches, error = compare_responses(
+                expected_response, actual_response, strict=True
+            )
+
         if not matches:
             log_test_result(
                 "POST",
@@ -539,19 +714,23 @@ def test_post_endpoint(base_url, path, operation):
     return True, None
 
 
-def test_put_endpoint(base_url, path, operation):
+def test_put_endpoint(base_url, path, operation, strict_examples=True):
     """Test a PUT endpoint using the example from the OpenAPI spec.
 
     Args:
         base_url: Base URL of the API server
         path: API endpoint path (may contain path parameters)
         operation: OpenAPI operation object
+        strict_examples: If True, strictly match example responses; if False, only validate structure
 
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
     # Collect ALL test cases: both from examples AND generated from schema
     request_test_cases = []
+    test_case_origins = (
+        []
+    )  # Track if each test case is 'example' or 'generated'
     warnings = []
 
     request_body = operation.get("requestBody", {})
@@ -561,11 +740,13 @@ def test_put_endpoint(base_url, path, operation):
         # Collect explicit examples
         if "example" in media_obj:
             request_test_cases.append(media_obj["example"])
+            test_case_origins.append("example")
         if "examples" in media_obj:
             examples_dict = media_obj["examples"]
             for ex_name, ex_obj in examples_dict.items():
                 if "value" in ex_obj:
                     request_test_cases.append(ex_obj["value"])
+                    test_case_origins.append("example")
 
         # Also generate test cases from schema
         if "schema" in media_obj:
@@ -576,7 +757,9 @@ def test_put_endpoint(base_url, path, operation):
                     warnings.extend(warning)
                 else:
                     warnings.append(warning)
-            request_test_cases.extend(generated)
+            for gen_case in generated:
+                request_test_cases.append(gen_case)
+                test_case_origins.append("generated")
         break
 
     if not request_test_cases:
@@ -600,34 +783,34 @@ def test_put_endpoint(base_url, path, operation):
             pass  # Skip non-numeric status codes like 'default'
 
     expected_response = None
+    response_schema = None
+    response_is_example_based = False
+
     for media_type, media_obj in content.items():
         if "example" in media_obj:
             expected_response = media_obj["example"]
+            response_is_example_based = True
+            # Also extract schema if present for schema-generated tests
+            if "schema" in media_obj:
+                response_schema = media_obj["schema"]
             break
         elif "examples" in media_obj:
             examples = media_obj["examples"]
             if examples:
                 first_example = next(iter(examples.values()))
                 expected_response = first_example.get("value")
-                break
-        elif "schema" in media_obj:
-            # Generate test cases from schema
-            schema = media_obj["schema"]
-            response_test_cases, warning = generate_test_cases_for_schema(
-                schema
-            )
-            if warning:
-                if isinstance(warning, list):
-                    for w in warning:
-                        print(f"\n{w}")
-                else:
-                    print(f"\n{warning}")
-            if response_test_cases:
-                expected_response = response_test_cases[0]
+                response_is_example_based = True
+                # Also extract schema if present for schema-generated tests
+                if "schema" in media_obj:
+                    response_schema = media_obj["schema"]
                 break
 
+    # We are opinionated: examples are required
     if expected_response is None:
-        return False, "No example or schema found for 200 response"
+        return (
+            False,
+            "No example found for 200 response. Examples are required.",
+        )
 
     # Replace path parameters with values from the response example
     url = f"{base_url}{path}"
@@ -661,7 +844,9 @@ def test_put_endpoint(base_url, path, operation):
 
     # Test all collected request cases
     errors = []
-    for request_test_case in request_test_cases:
+    for request_test_case, test_origin in zip(
+        request_test_cases, test_case_origins
+    ):
         # Make the PUT request
         try:
             response = make_request("PUT", url, json=request_test_case)
@@ -716,8 +901,22 @@ def test_put_endpoint(base_url, path, operation):
             errors.append(error_msg)
             continue
 
-        # Check response matches example
-        matches, error = compare_responses(expected_response, actual_response)
+        # Check response matches example or schema
+        # If request is example-based AND response has example, use strict/lenient matching
+        # If request is schema-generated, always use schema validation for response
+        if test_origin == "example" and response_is_example_based:
+            matches, error = compare_responses(
+                expected_response, actual_response, strict=strict_examples
+            )
+        elif response_schema:
+            matches, error = validate_against_schema(
+                response_schema, actual_response
+            )
+        else:
+            matches, error = compare_responses(
+                expected_response, actual_response, strict=True
+            )
+
         if not matches:
             log_test_result(
                 "PUT",
@@ -751,13 +950,14 @@ def test_put_endpoint(base_url, path, operation):
     return True, None
 
 
-def test_delete_endpoint(base_url, path, operation):
-    """Test a DELETE endpoint using the example from the OpenAPI spec.
+def test_delete_endpoint(base_url, path, operation, strict_examples=True):
+    """Test a DELETE endpoint.
 
     Args:
         base_url: Base URL of the API server
         path: API endpoint path (may contain path parameters)
         operation: OpenAPI operation object
+        strict_examples: If True, strictly match example responses; if False, only validate structure
 
     Returns:
         tuple: (success: bool, error_message: str or None)

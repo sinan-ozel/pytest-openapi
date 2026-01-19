@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pytest-openapi"
 dynamic = ["version"]
-description = ""
+description = "An opinionated, lightweight black-box contract tester against a live API using its OpenAPI specification as the source of truth"
 readme = "README.md"
 authors = [
     { name = "Sinan Ozel", email = "coding@sinan.slmail.me" },
