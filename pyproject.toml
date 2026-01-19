@@ -40,6 +40,7 @@ dev = [
 docs = [
     "mkdocs-material>=9.0.0", # Material theme for MkDocs
     "mkdocstrings[python]>=0.24.0",  # API documentation from docstrings
+    "mike>=2.0.0",           # For versioned documentation
 ]
 
 publish = [

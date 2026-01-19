@@ -309,7 +309,7 @@ jobs:
       group: github-pages
       cancel-in-progress: false
     permissions:
-      contents: read
+      contents: write
       pages: write
       id-token: write
     environment:
@@ -318,23 +318,32 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
+      - name: Configure Git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
       - name: Install dependencies
         run: pip install .[docs]
 
-      - name: Build documentation
-        run: mkdocs build --strict
+      - name: Get version from published release
+        id: get_version
+        run: |
+          cd ./src
+          VERSION=$(python -c "from ${{ env.MODULE_NAME }} import __version__; print(__version__)")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing docs for version: $VERSION"
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy documentation with mike
+        run: |
+          git fetch origin gh-pages --depth=1 || true
+          mike deploy --push --update-aliases ${{ steps.get_version.outputs.VERSION }} latest
+          mike set-default --push latest
