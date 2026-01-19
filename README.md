@@ -14,6 +14,8 @@ An opinionated, lightweight **black-box contract tester** against a **live API**
 This tool validates OpenAPI quality, generates test cases from schemas, and verifies that real HTTP responses match the contract.
 This "certifies" that the documentation is complete with descriptions, example, and schema, and that the endpoint behaves as the documentation suggests.
 
+📚 **[Read the full documentation](https://sinan-ozel.github.io/pytest-openapi/)**
+
 ## Why?
 
 This package tries to simulate the frustrations of API users, as consumers.
