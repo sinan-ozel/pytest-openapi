@@ -194,7 +194,9 @@ def get_test_report_markdown():
                 report_lines.append("🔧 *Test case generated from schema*")
             report_lines.append("")
 
-        report_lines.append(f"**Endpoint:** `{test['method'].upper()} {test['path']}`")
+        report_lines.append(
+            f"**Endpoint:** `{test['method'].upper()} {test['path']}`"
+        )
         report_lines.append("")
 
         if test["request_body"] is not None:
@@ -251,8 +253,8 @@ def get_test_report_markdown():
         if not test["success"] and test["error_message"]:
             report_lines.append("### ❌ Error")
             report_lines.append("")
-            report_lines.append(f"```")
-            report_lines.append(test['error_message'])
+            report_lines.append("```")
+            report_lines.append(test["error_message"])
             report_lines.append("```")
             report_lines.append("")
 

@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-01-23
+
+### Added
+- New `--openapi-markdown-output=FILENAME` flag to generate test reports in Markdown format
+- New `--openapi-no-stdout` flag to suppress all output to stdout (useful for CI/CD)
+- Markdown report generator with formatted code blocks, summary statistics, and test case origin tracking
+- Server state reset functionality (POST /reset endpoint) to ensure test isolation
+- Documentation for markdown output and stdout suppression features
+
+### Changed
+- Tests now execute in method-grouped order (GET → POST → PUT → DELETE) to avoid state pollution
+- PUT endpoints now only use example-based tests (skip schema-generated tests) to avoid issues with path parameters that reference specific resource IDs
+- Server state is reset at test start if /reset endpoint is available
+- `pytest_unconfigure` hook added to prevent conflicts with pytest-depends plugin
+
+### Fixed
+- PUT endpoint testing improved by removing schema-generated tests that don't work well with path parameters
+- IndexError in pytest-depends plugin interaction resolved by adding cleanup hook
+
+### Removed
+- Removed completed TODO items from README (description requirement toggle, 400 message checks)
+
 ## [0.1.2] - 2026-01-18
 
 ### Added

@@ -120,11 +120,14 @@ def pytest_configure(config):
         # Write markdown report to file if requested
         if markdown_output_file:
             from .contract import get_test_report_markdown
+
             try:
-                with open(markdown_output_file, 'w', encoding='utf-8') as f:
+                with open(markdown_output_file, "w", encoding="utf-8") as f:
                     f.write(get_test_report_markdown())
                 if not no_stdout:
-                    print(f"\n📝 Markdown report written to: {markdown_output_file}")
+                    print(
+                        f"\n📝 Markdown report written to: {markdown_output_file}"
+                    )
             except Exception as e:
                 print(f"\n⚠️  Warning: Failed to write markdown report: {e}")
 
@@ -150,9 +153,9 @@ def pytest_unconfigure(config):
     """Clean up when pytest unconfigures.
 
     This hook is added to prevent conflicts with pytest-depends plugin.
-    When pytest-openapi calls pytest.exit() during pytest_configure,
-    it can interfere with pytest-depends' internal state management.
-    This hook ensures proper cleanup happens.
+    When pytest-openapi calls pytest.exit() during pytest_configure, it
+    can interfere with pytest-depends' internal state management. This
+    hook ensures proper cleanup happens.
     """
     # No specific cleanup needed for pytest-openapi,
     # but defining this hook prevents the IndexError in pytest-depends
