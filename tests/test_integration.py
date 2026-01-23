@@ -539,7 +539,7 @@ def test_example_value_mismatch_passes_lenient():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_get_404_passes_with_lenient_mode():
     """Test that GET returning documented 404 passes with --openapi-no-strict-example-checking.
-    
+
     This tests the bug where a documented 404 response should be acceptable
     when using lenient mode, just like 200 responses are acceptable.
     """
@@ -562,7 +562,7 @@ def test_get_404_passes_with_lenient_mode():
     )
 
     output = result.stdout + result.stderr
-    
+
     # This should pass because 404 is documented in the OpenAPI spec
     # and lenient mode should accept any documented status code
     assert (

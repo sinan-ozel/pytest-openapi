@@ -832,7 +832,9 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
         # In lenient mode, accept any documented status code
         if not strict_examples and response.status_code in documented_statuses:
             # Get the response schema/example for the actual status code
-            actual_status_response = responses.get(str(response.status_code), {})
+            actual_status_response = responses.get(
+                str(response.status_code), {}
+            )
             actual_content = actual_status_response.get("content", {})
             actual_expected_response = None
             actual_response_schema = None
@@ -1133,7 +1135,9 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
         # In lenient mode, accept any documented status code
         if not strict_examples and response.status_code in documented_statuses:
             # Get the response schema/example for the actual status code
-            actual_status_response = responses.get(str(response.status_code), {})
+            actual_status_response = responses.get(
+                str(response.status_code), {}
+            )
             actual_content = actual_status_response.get("content", {})
             actual_expected_response = None
             actual_response_schema = None
