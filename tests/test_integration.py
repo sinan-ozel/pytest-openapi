@@ -537,6 +537,44 @@ def test_example_value_mismatch_passes_lenient():
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_get_404_passes_with_lenient_mode():
+    """Test that GET returning documented 404 passes with --openapi-no-strict-example-checking.
+    
+    This tests the bug where a documented 404 response should be acceptable
+    when using lenient mode, just like 200 responses are acceptable.
+    """
+    print(
+        "\n🔍 Testing GET 404 with lenient mode (documented status should pass)...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-get-returns-404:8000",
+            "--openapi-no-strict-example-checking",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    
+    # This should pass because 404 is documented in the OpenAPI spec
+    # and lenient mode should accept any documented status code
+    assert (
+        result.returncode == 0
+    ), f"Expected test to pass when 404 is documented and lenient mode is on, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+        or "✅ All contract tests passed!" in output
+    ), f"Expected validation success, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_put_example_value_mismatch_fails_strict():
     """Test that PUT with example value mismatch fails with strict checking (default)."""
     print(

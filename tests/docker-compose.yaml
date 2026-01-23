@@ -233,6 +233,19 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-get-returns-404:
+    build:
+      context: test_servers/get_returns_404
+      dockerfile: Dockerfile
+    image: mock-server-get-returns-404:latest
+    ports:
+      - "8019:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..
