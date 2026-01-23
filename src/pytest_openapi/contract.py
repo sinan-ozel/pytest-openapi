@@ -153,6 +153,115 @@ def get_test_report():
     return "\n".join(report_lines)
 
 
+def get_test_report_markdown():
+    """Generate a Markdown-formatted test report.
+
+    Returns:
+        str: Markdown formatted report of all tests
+    """
+    if not test_reports:
+        return "No tests have been run yet."
+
+    report_lines = []
+    report_lines.append("# OpenAPI Contract Test Report")
+    report_lines.append("")
+
+    # Summary statistics
+    total_tests = len(test_reports)
+    passed_tests = sum(1 for test in test_reports if test["success"])
+    failed_tests = total_tests - passed_tests
+
+    report_lines.append("## Summary")
+    report_lines.append("")
+    report_lines.append(f"- **Total Tests:** {total_tests}")
+    report_lines.append(f"- **Passed:** ✅ {passed_tests}")
+    report_lines.append(f"- **Failed:** ❌ {failed_tests}")
+    report_lines.append("")
+    report_lines.append("---")
+    report_lines.append("")
+
+    for i, test in enumerate(test_reports, 1):
+        status_symbol = "✅" if test["success"] else "❌"
+        report_lines.append(f"## Test #{i} {status_symbol}")
+        report_lines.append("")
+
+        # Display test case origin if available
+        if test.get("test_case_origin"):
+            origin = test["test_case_origin"]
+            if origin == "example":
+                report_lines.append("📋 *Test case from OpenAPI example*")
+            elif origin == "generated":
+                report_lines.append("🔧 *Test case generated from schema*")
+            report_lines.append("")
+
+        report_lines.append(f"**Endpoint:** `{test['method'].upper()} {test['path']}`")
+        report_lines.append("")
+
+        if test["request_body"] is not None:
+            formatted_request = json.dumps(test["request_body"], indent=2)
+            report_lines.append("### Request Body")
+            report_lines.append("")
+            report_lines.append("```json")
+            report_lines.append(formatted_request)
+            report_lines.append("```")
+            report_lines.append("")
+
+        # Format expected body
+        if test["expected_body"] == "" or test["expected_body"] is None:
+            expected_body_str = "*(empty)*"
+        else:
+            try:
+                expected_body_str = json.dumps(test["expected_body"], indent=2)
+            except (TypeError, ValueError):
+                expected_body_str = str(test["expected_body"])
+
+        # Format actual body
+        if test["actual_body"] == "" or test["actual_body"] is None:
+            actual_body_str = "*(empty)*"
+        else:
+            try:
+                actual_body_str = json.dumps(test["actual_body"], indent=2)
+            except (TypeError, ValueError):
+                actual_body_str = str(test["actual_body"])
+
+        report_lines.append("### Expected Response")
+        report_lines.append("")
+        report_lines.append(f"**Status:** `{test['expected_status']}`")
+        report_lines.append("")
+        if expected_body_str != "*(empty)*":
+            report_lines.append("```json")
+            report_lines.append(expected_body_str)
+            report_lines.append("```")
+        else:
+            report_lines.append(expected_body_str)
+        report_lines.append("")
+
+        report_lines.append("### Actual Response")
+        report_lines.append("")
+        report_lines.append(f"**Status:** `{test['actual_status']}`")
+        report_lines.append("")
+        if actual_body_str != "*(empty)*":
+            report_lines.append("```json")
+            report_lines.append(actual_body_str)
+            report_lines.append("```")
+        else:
+            report_lines.append(actual_body_str)
+        report_lines.append("")
+
+        if not test["success"] and test["error_message"]:
+            report_lines.append("### ❌ Error")
+            report_lines.append("")
+            report_lines.append(f"```")
+            report_lines.append(test['error_message'])
+            report_lines.append("```")
+            report_lines.append("")
+
+        report_lines.append("---")
+        report_lines.append("")
+
+    return "\n".join(report_lines)
+
+
 def validate_against_schema(schema, actual, path=""):
     """Validate actual response against JSON schema.
 
@@ -752,7 +861,9 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
-    # Collect ALL test cases: both from examples AND generated from schema
+    # For PUT endpoints with path parameters, only use example-based tests
+    # Schema-generated tests don't work well because path params are extracted
+    # from examples and the resource may not exist for generated test cases
     request_test_cases = []
     test_case_origins = (
         []
@@ -774,18 +885,8 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
                     request_test_cases.append(ex_obj["value"])
                     test_case_origins.append("example")
 
-        # Also generate test cases from schema
-        if "schema" in media_obj:
-            schema = media_obj["schema"]
-            generated, warning = generate_test_cases_for_schema(schema)
-            if warning:
-                if isinstance(warning, list):
-                    warnings.extend(warning)
-                else:
-                    warnings.append(warning)
-            for gen_case in generated:
-                request_test_cases.append(gen_case)
-                test_case_origins.append("generated")
+        # Skip schema-generated tests for PUT - they don't work well with path parameters
+        # that reference specific resource IDs from examples
         break
 
     if not request_test_cases:

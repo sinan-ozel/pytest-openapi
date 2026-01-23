@@ -93,6 +93,8 @@ pytest --openapi=http://localhost:8000
 
 - `--openapi=BASE_URL`: Run contract tests against the API at the specified base URL
 - `--openapi-no-strict-example-checking`: Use lenient validation for example-based tests
+- `--openapi-markdown-output=FILENAME`: Write test results in Markdown format to the specified file
+- `--openapi-no-stdout`: Suppress all output to stdout
 
 #### Strict vs Lenient Example Checking
 
@@ -112,6 +114,40 @@ pytest --openapi=http://localhost:8000 --openapi-no-strict-example-checking
 
 **Note**: Schema-generated tests always use schema validation (not affected by this flag).
 
+#### Markdown Output Format
+
+You can generate test reports in Markdown format and save them to a file:
+
+```bash
+pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md
+```
+
+This creates a `report.md` file with:
+- Summary statistics (total, passed, failed tests)
+- Formatted code blocks for JSON data
+- Clear sections for expected vs actual responses
+- Error details in formatted blocks
+
+The markdown report is written independently of stdout output.
+
+#### Suppress Stdout
+
+For CI/CD pipelines where you want completely silent operation or only care about the exit code:
+
+```bash
+pytest --openapi=http://localhost:8000 --openapi-no-stdout
+```
+
+This will:
+- Suppress all output to stdout
+- Still return appropriate exit codes (0 for success, 1 for failure)
+- Can be combined with `--openapi-markdown-output` to only generate a file
+
+You can combine flags for silent operation with file output:
+```bash
+pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md --openapi-no-stdout
+```
+
 ## Server
 See here an example server - `email-server`: [tests/test_servers/email_server/server.py](tests/test_servers/email_server/server.py)
 
@@ -125,8 +161,6 @@ This is a work in progress.
 - [ ] A check that the example matches the schema
 - [ ] Ask that 400 responses be in the documentation.
 - [ ] A check for regexp and email formats.
-- [ ] Extra checks from 200 or 201 messages with missing keys to see 400 messages.
-- [ ] Option to turn off the description requirement.
 
 ## In Consideration
 - [ ] Use LLM-as-a-judge to assess the error messages and check their spelling.
