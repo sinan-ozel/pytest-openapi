@@ -548,7 +548,71 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
         response.json() if response.status_code == 200 else response.text
     )
 
-    # Accept 501 (Not Implemented) as valid if documented
+    # In lenient mode, accept any documented status code
+    if not strict_examples and response.status_code in documented_statuses:
+        # Get the response schema/example for the actual status code
+        actual_status_response = responses.get(str(response.status_code), {})
+        actual_content = actual_status_response.get("content", {})
+        actual_expected_response = None
+        actual_response_schema = None
+
+        for media_type, media_obj in actual_content.items():
+            if "example" in media_obj:
+                actual_expected_response = media_obj["example"]
+            if "schema" in media_obj:
+                actual_response_schema = media_obj["schema"]
+            break
+
+        # Parse JSON response if possible
+        try:
+            if response.text:
+                actual_response = response.json()
+        except Exception:
+            pass
+
+        # Validate against the actual status code's schema
+        if actual_response_schema:
+            matches, error = validate_against_schema(
+                actual_response_schema, actual_response
+            )
+        elif actual_expected_response:
+            matches, error = compare_responses(
+                actual_expected_response, actual_response, strict=False
+            )
+        else:
+            # No schema or example for this status, just accept it
+            matches, error = True, None
+
+        if matches:
+            log_test_result(
+                "GET",
+                path,
+                None,
+                200,
+                expected_response,
+                response.status_code,
+                actual_response,
+                True,
+                None,
+                "example",
+            )
+            return True, None
+        else:
+            log_test_result(
+                "GET",
+                path,
+                None,
+                200,
+                expected_response,
+                response.status_code,
+                actual_response,
+                False,
+                error,
+                "example",
+            )
+            return False, error
+
+    # Accept 501 (Not Implemented) as valid if documented (for strict mode)
     if response.status_code == 501 and 501 in documented_statuses:
         log_test_result(
             "GET",
@@ -765,7 +829,74 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
             else response.text
         )
 
-        # Accept 501 (Not Implemented) as valid if documented
+        # In lenient mode, accept any documented status code
+        if not strict_examples and response.status_code in documented_statuses:
+            # Get the response schema/example for the actual status code
+            actual_status_response = responses.get(
+                str(response.status_code), {}
+            )
+            actual_content = actual_status_response.get("content", {})
+            actual_expected_response = None
+            actual_response_schema = None
+
+            for media_type, media_obj in actual_content.items():
+                if "example" in media_obj:
+                    actual_expected_response = media_obj["example"]
+                if "schema" in media_obj:
+                    actual_response_schema = media_obj["schema"]
+                break
+
+            # Parse JSON response if possible
+            try:
+                if response.text:
+                    actual_response = response.json()
+            except Exception:
+                pass
+
+            # Validate against the actual status code's schema
+            if actual_response_schema:
+                matches, error = validate_against_schema(
+                    actual_response_schema, actual_response
+                )
+            elif actual_expected_response:
+                matches, error = compare_responses(
+                    actual_expected_response, actual_response, strict=False
+                )
+            else:
+                # No schema or example for this status, just accept it
+                matches, error = True, None
+
+            if matches:
+                log_test_result(
+                    "POST",
+                    path,
+                    request_test_case,
+                    expected_status,
+                    expected_response,
+                    response.status_code,
+                    actual_response,
+                    True,
+                    None,
+                    test_origin,
+                )
+                continue
+            else:
+                log_test_result(
+                    "POST",
+                    path,
+                    request_test_case,
+                    expected_status,
+                    expected_response,
+                    response.status_code,
+                    actual_response,
+                    False,
+                    error,
+                    test_origin,
+                )
+                errors.append(error)
+                continue
+
+        # Accept 501 (Not Implemented) as valid if documented (for strict mode)
         if response.status_code == 501 and 501 in documented_statuses:
             log_test_result(
                 "POST",
@@ -1001,7 +1132,74 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
             response.json() if response.status_code == 200 else response.text
         )
 
-        # Accept 501 (Not Implemented) as valid if documented
+        # In lenient mode, accept any documented status code
+        if not strict_examples and response.status_code in documented_statuses:
+            # Get the response schema/example for the actual status code
+            actual_status_response = responses.get(
+                str(response.status_code), {}
+            )
+            actual_content = actual_status_response.get("content", {})
+            actual_expected_response = None
+            actual_response_schema = None
+
+            for media_type, media_obj in actual_content.items():
+                if "example" in media_obj:
+                    actual_expected_response = media_obj["example"]
+                if "schema" in media_obj:
+                    actual_response_schema = media_obj["schema"]
+                break
+
+            # Parse JSON response if possible
+            try:
+                if response.text:
+                    actual_response = response.json()
+            except Exception:
+                pass
+
+            # Validate against the actual status code's schema
+            if actual_response_schema:
+                matches, error = validate_against_schema(
+                    actual_response_schema, actual_response
+                )
+            elif actual_expected_response:
+                matches, error = compare_responses(
+                    actual_expected_response, actual_response, strict=False
+                )
+            else:
+                # No schema or example for this status, just accept it
+                matches, error = True, None
+
+            if matches:
+                log_test_result(
+                    "PUT",
+                    resolved_path,
+                    request_test_case,
+                    200,
+                    expected_response,
+                    response.status_code,
+                    actual_response,
+                    True,
+                    None,
+                    test_origin,
+                )
+                continue
+            else:
+                log_test_result(
+                    "PUT",
+                    resolved_path,
+                    request_test_case,
+                    200,
+                    expected_response,
+                    response.status_code,
+                    actual_response,
+                    False,
+                    error,
+                    test_origin,
+                )
+                errors.append(error)
+                continue
+
+        # Accept 501 (Not Implemented) as valid if documented (for strict mode)
         if response.status_code == 501 and 501 in documented_statuses:
             log_test_result(
                 "PUT",
@@ -1217,7 +1415,71 @@ def test_delete_endpoint(base_url, path, operation, strict_examples=True):
         except Exception:
             actual_response = response.text
 
-    # Accept 501 (Not Implemented) as valid if documented
+    # In lenient mode, accept any documented status code
+    if not strict_examples and response.status_code in documented_statuses:
+        # Get the response schema/example for the actual status code
+        actual_status_response = responses.get(str(response.status_code), {})
+        actual_content = actual_status_response.get("content", {})
+        actual_expected_response = None
+        actual_response_schema = None
+
+        for media_type, media_obj in actual_content.items():
+            if "example" in media_obj:
+                actual_expected_response = media_obj["example"]
+            if "schema" in media_obj:
+                actual_response_schema = media_obj["schema"]
+            break
+
+        # Parse JSON response if possible
+        try:
+            if response.text:
+                actual_response = response.json()
+        except Exception:
+            pass
+
+        # Validate against the actual status code's schema
+        if actual_response_schema:
+            matches, error = validate_against_schema(
+                actual_response_schema, actual_response
+            )
+        elif actual_expected_response:
+            matches, error = compare_responses(
+                actual_expected_response, actual_response, strict=False
+            )
+        else:
+            # No schema or example for this status, just accept it
+            matches, error = True, None
+
+        if matches:
+            log_test_result(
+                "DELETE",
+                resolved_path,
+                None,
+                expected_status,
+                expected_body,
+                response.status_code,
+                actual_response,
+                True,
+                None,
+                "example",
+            )
+            return True, None
+        else:
+            log_test_result(
+                "DELETE",
+                resolved_path,
+                None,
+                expected_status,
+                expected_body,
+                response.status_code,
+                actual_response,
+                False,
+                error,
+                "example",
+            )
+            return False, error
+
+    # Accept 501 (Not Implemented) as valid if documented (for strict mode)
     if response.status_code == 501 and 501 in documented_statuses:
         log_test_result(
             "DELETE",
