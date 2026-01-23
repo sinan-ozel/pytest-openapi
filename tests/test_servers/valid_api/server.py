@@ -5,11 +5,22 @@ from flask import Flask, jsonify, request
 app = Flask(__name__)
 
 # In-memory database
-users_db = {
-    1: {"id": 1, "name": "Alice", "email": "alice@example.com"},
-    2: {"id": 2, "name": "Bob", "email": "bob@example.com"},
-}
-next_id = 3
+users_db = {}
+next_id = 1
+
+
+def reset_db():
+    """Reset database to initial state."""
+    global users_db, next_id
+    users_db = {
+        1: {"id": 1, "name": "Alice", "email": "alice@example.com"},
+        2: {"id": 2, "name": "Bob", "email": "bob@example.com"},
+    }
+    next_id = 3
+
+
+# Initialize on startup
+reset_db()
 
 
 @app.route("/openapi.json")
@@ -276,6 +287,13 @@ def openapi():
 def get_users():
     """Get all users."""
     return jsonify(list(users_db.values()))
+
+
+@app.route("/reset", methods=["POST"])
+def reset():
+    """Reset database to initial state for testing."""
+    reset_db()
+    return jsonify({"status": "reset"}), 200
 
 
 @app.route("/users", methods=["POST"])
