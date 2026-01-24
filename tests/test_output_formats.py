@@ -7,13 +7,17 @@ import os
 import tempfile
 
 
-@pytest.mark.depends(on=["test_integration.py::test_openapi_flag_is_recognized"])
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
 def test_markdown_output_to_file():
     """Test that --openapi-markdown-output writes Markdown to a file."""
     print("\n🔍 Testing Markdown output to file...", flush=True)
     time.sleep(0.5)
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".md", delete=False
+    ) as tmp:
         tmp_path = tmp.name
 
     try:
@@ -30,10 +34,12 @@ def test_markdown_output_to_file():
         )
 
         # Check that the file was created
-        assert os.path.exists(tmp_path), f"Expected markdown file to be created at {tmp_path}"
+        assert os.path.exists(
+            tmp_path
+        ), f"Expected markdown file to be created at {tmp_path}"
 
         # Read the file content
-        with open(tmp_path, 'r') as f:
+        with open(tmp_path, "r") as f:
             file_content = f.read()
 
         # Check for Markdown formatting elements in the file
@@ -73,13 +79,17 @@ def test_markdown_output_to_file():
             os.unlink(tmp_path)
 
 
-@pytest.mark.depends(on=["test_integration.py::test_openapi_flag_is_recognized"])
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
 def test_markdown_output_with_failures():
     """Test that --openapi-markdown-output properly formats test failures in file."""
     print("\n🔍 Testing Markdown output format with failures...", flush=True)
     time.sleep(0.5)
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".md", delete=False
+    ) as tmp:
         tmp_path = tmp.name
 
     try:
@@ -96,10 +106,12 @@ def test_markdown_output_with_failures():
         )
 
         # Check that the file was created
-        assert os.path.exists(tmp_path), f"Expected markdown file to be created at {tmp_path}"
+        assert os.path.exists(
+            tmp_path
+        ), f"Expected markdown file to be created at {tmp_path}"
 
         # Read the file content
-        with open(tmp_path, 'r') as f:
+        with open(tmp_path, "r") as f:
             file_content = f.read()
 
         # Check for Markdown formatting with failures in file
@@ -124,7 +136,9 @@ def test_markdown_output_with_failures():
             os.unlink(tmp_path)
 
 
-@pytest.mark.depends(on=["test_integration.py::test_openapi_flag_is_recognized"])
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
 def test_no_stdout():
     """Test that --openapi-no-stdout suppresses all stdout."""
     print("\n🔍 Testing stdout suppression...", flush=True)
@@ -160,7 +174,9 @@ def test_no_stdout():
     ), f"Expected tests to pass with no-stdout, got: {output}"
 
 
-@pytest.mark.depends(on=["test_integration.py::test_openapi_flag_is_recognized"])
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
 def test_no_stdout_with_failures():
     """Test that --openapi-no-stdout suppresses all stdout even with failures."""
     print("\n🔍 Testing stdout suppression with failures...", flush=True)
@@ -196,13 +212,17 @@ def test_no_stdout_with_failures():
     ), f"Expected tests to fail for missing key test"
 
 
-@pytest.mark.depends(on=["test_integration.py::test_openapi_flag_is_recognized"])
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
 def test_markdown_and_no_stdout_combined():
     """Test that --openapi-markdown-output with --openapi-no-stdout writes file without stdout."""
     print("\n🔍 Testing combined Markdown file and no stdout...", flush=True)
     time.sleep(0.5)
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".md", delete=False
+    ) as tmp:
         tmp_path = tmp.name
 
     try:
@@ -240,10 +260,12 @@ def test_markdown_and_no_stdout_combined():
         ), f"Expected no confirmation message with no-stdout, got: {output}"
 
         # But the file should still be created
-        assert os.path.exists(tmp_path), f"Expected markdown file to be created at {tmp_path}"
+        assert os.path.exists(
+            tmp_path
+        ), f"Expected markdown file to be created at {tmp_path}"
 
         # And contain the report
-        with open(tmp_path, 'r') as f:
+        with open(tmp_path, "r") as f:
             file_content = f.read()
 
         assert (
@@ -251,15 +273,15 @@ def test_markdown_and_no_stdout_combined():
         ), f"Expected Markdown header in file, got: {file_content}"
 
         # Should pass
-        assert (
-            result.returncode == 0
-        ), f"Expected tests to pass"
+        assert result.returncode == 0, f"Expected tests to pass"
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
 
-@pytest.mark.depends(on=["test_integration.py::test_openapi_flag_is_recognized"])
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
 def test_default_output_unchanged():
     """Test that default output (without flags) remains unchanged."""
     print("\n🔍 Testing default output format...", flush=True)
@@ -300,7 +322,9 @@ def test_default_output_unchanged():
     ), f"Expected tests to pass with default output, got: {output}"
 
 
-@pytest.mark.depends(on=["test_integration.py::test_openapi_flag_is_recognized"])
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
 def test_pytest_depends_compatibility():
     """Test that pytest-openapi works with pytest-depends without IndexError."""
     print("\n🔍 Testing pytest-depends compatibility...", flush=True)
@@ -330,4 +354,3 @@ def test_pytest_depends_compatibility():
     assert (
         "pytest_unconfigure" not in output or result.returncode == 0
     ), f"Expected no pytest_unconfigure errors, got: {output}"
-
