@@ -130,6 +130,8 @@ This creates a `report.md` file with:
 
 The markdown report is written independently of stdout output.
 
+**Example output**: See [example_report.md](example_report.md) for a sample markdown report.
+
 #### Suppress Stdout
 
 For CI/CD pipelines where you want completely silent operation or only care about the exit code:

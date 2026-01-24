@@ -30,6 +30,42 @@ Use lenient validation for example-based tests. In this mode, responses are vali
 
 See [Validation Modes](how-it-works/validation-modes.md) for details.
 
+### `--openapi-markdown-output=FILENAME`
+Write test results in Markdown format to the specified file.
+
+**Usage**:
+```bash
+pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md
+```
+
+The markdown report includes:
+- Summary statistics (total, passed, failed tests)
+- Formatted code blocks for JSON data
+- Clear sections for expected vs actual responses
+- Error details in formatted blocks
+
+The markdown report is written independently of stdout output.
+
+### `--openapi-no-stdout`
+Suppress all output to stdout. Useful for CI/CD pipelines where you only need the exit code or want to generate a file output without console output.
+
+**Usage**:
+```bash
+pytest --openapi=http://localhost:8000 --openapi-no-stdout
+```
+
+This will:
+- Suppress all output to stdout
+- Still return appropriate exit codes (0 for success, 1 for failure)
+- Can be combined with `--openapi-markdown-output` to only generate a file
+
+**Combined usage**:
+```bash
+pytest --openapi=http://localhost:8000 \
+  --openapi-markdown-output=report.md \
+  --openapi-no-stdout
+```
+
 ## Features
 
 - ✅ Tests against live APIs
