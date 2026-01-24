@@ -52,7 +52,7 @@ The markdown report includes:
 - Clear sections for request/response
 - Test case origin labels (📋 example / 🔧 schema-generated)
 
-See the [example_report.md](../../example_report.md) for a sample output.
+See the [example_report.md](../example_report.md) for a sample output.
 
 ### Silent Mode
 
