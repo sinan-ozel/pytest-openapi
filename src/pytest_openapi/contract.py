@@ -277,6 +277,29 @@ def validate_against_schema(schema, actual, path=""):
     """
     schema_type = schema.get("type")
 
+    # Handle nullable fields (OpenAPI 3.0 uses "nullable": true, OpenAPI 3.1 uses type: ["string", "null"])
+    is_nullable = schema.get("nullable", False)
+    if isinstance(schema_type, list):
+        # OpenAPI 3.1 style: type: ["string", "null"]
+        if "null" in schema_type and actual is None:
+            return True, None
+        # Filter out "null" and get the actual type
+        non_null_types = [t for t in schema_type if t != "null"]
+        if len(non_null_types) == 1:
+            schema_type = non_null_types[0]
+        elif len(non_null_types) > 1:
+            # Multiple non-null types - try each one
+            for possible_type in non_null_types:
+                temp_schema = schema.copy()
+                temp_schema["type"] = possible_type
+                valid, _ = validate_against_schema(temp_schema, actual, path)
+                if valid:
+                    return True, None
+            return False, f"{path}: Value does not match any of the allowed types: {non_null_types}"
+    elif is_nullable and actual is None:
+        # OpenAPI 3.0 style: nullable: true
+        return True, None
+
     # Check type
     if schema_type == "object":
         if not isinstance(actual, dict):
