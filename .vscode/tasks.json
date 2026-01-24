@@ -84,10 +84,15 @@
     {
       "label": "validate-docs",
       "type": "shell",
-      "command": "mkdocs",
+      "command": "docker",
       "args": [
-        "build",
-        "--strict"
+        "compose",
+        "-f", "${workspaceFolder}/docs-validate/docker-compose.yaml",
+        "--project-directory", "${workspaceFolder}/docs-validate",
+        "up",
+        "--build",
+        "--abort-on-container-exit",
+        "--exit-code-from", "docs-validator"
       ],
       "problemMatcher": [],
       "group": {

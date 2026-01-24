@@ -1,0 +1,10 @@
+services:
+  docs-validator:
+    build:
+      context: ..
+      dockerfile: docs-validate/Dockerfile
+    image: pytest-openapi-docs-validate:latest
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace
+    command: mkdocs build --strict
