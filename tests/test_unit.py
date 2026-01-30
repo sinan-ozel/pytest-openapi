@@ -192,3 +192,104 @@ def test_validate_nullable_fields():
 
     valid, error = validate_against_schema(schema_object_3_1, response_with_null)
     assert valid, f"Should accept response with null nullable field (3.1): {error}"
+
+
+def test_validate_enum_fields():
+    """Test that enum fields are properly validated."""
+    from pytest_openapi.contract import validate_against_schema
+
+    # Test string enum
+    schema_string_enum = {
+        "type": "string",
+        "enum": ["option1", "option2", "option3"]
+    }
+
+    # Valid enum value
+    valid, error = validate_against_schema(schema_string_enum, "option1")
+    assert valid, f"Should accept valid enum value: {error}"
+
+    valid, error = validate_against_schema(schema_string_enum, "option2")
+    assert valid, f"Should accept valid enum value: {error}"
+
+    # Invalid enum value
+    valid, error = validate_against_schema(schema_string_enum, "invalid_option")
+    assert not valid, "Should reject invalid enum value"
+    assert "not one of the allowed enum values" in error
+    assert "['option1', 'option2', 'option3']" in error
+
+    # Test integer enum
+    schema_integer_enum = {
+        "type": "integer",
+        "enum": [1, 2, 3, 5, 8]
+    }
+
+    valid, error = validate_against_schema(schema_integer_enum, 5)
+    assert valid, f"Should accept valid integer enum value: {error}"
+
+    valid, error = validate_against_schema(schema_integer_enum, 4)
+    assert not valid, "Should reject invalid integer enum value"
+    assert "not one of the allowed enum values" in error
+
+    # Test enum in object property
+    schema_object_with_enum = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "status": {
+                "type": "string",
+                "enum": ["active", "inactive", "pending"]
+            },
+            "priority": {
+                "type": "integer",
+                "enum": [1, 2, 3]
+            }
+        },
+        "required": ["name", "status"]
+    }
+
+    # Valid object with enum values
+    valid_response = {
+        "name": "Test Item",
+        "status": "active",
+        "priority": 2
+    }
+    valid, error = validate_against_schema(schema_object_with_enum, valid_response)
+    assert valid, f"Should accept object with valid enum values: {error}"
+
+    # Invalid object with bad status enum
+    invalid_status_response = {
+        "name": "Test Item",
+        "status": "deleted",
+        "priority": 2
+    }
+    valid, error = validate_against_schema(schema_object_with_enum, invalid_status_response)
+    assert not valid, "Should reject object with invalid enum value"
+    assert "status" in error
+    assert "not one of the allowed enum values" in error
+
+    # Invalid object with bad priority enum
+    invalid_priority_response = {
+        "name": "Test Item",
+        "status": "active",
+        "priority": 5
+    }
+    valid, error = validate_against_schema(schema_object_with_enum, invalid_priority_response)
+    assert not valid, "Should reject object with invalid enum value"
+    assert "priority" in error
+    assert "not one of the allowed enum values" in error
+
+    # Test enum in array items
+    schema_array_with_enum = {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "enum": ["red", "green", "blue"]
+        }
+    }
+
+    valid, error = validate_against_schema(schema_array_with_enum, ["red", "blue", "green"])
+    assert valid, f"Should accept array with valid enum values: {error}"
+
+    valid, error = validate_against_schema(schema_array_with_enum, ["red", "yellow", "blue"])
+    assert not valid, "Should reject array with invalid enum value"
+    assert "not one of the allowed enum values" in error

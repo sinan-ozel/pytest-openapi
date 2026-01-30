@@ -10,7 +10,7 @@ def test_openapi_plugin_runs_alongside_regular_tests():
     print(
         "\n🔍 Testing OpenAPI plugin with regular pytest tests...", flush=True
     )
-    time.sleep(0.5)
+    time.sleep(2)
 
     # This test expects that there are regular test files in /app/test_samples/
     # The plugin should:

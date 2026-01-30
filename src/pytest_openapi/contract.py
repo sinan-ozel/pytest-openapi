@@ -300,6 +300,15 @@ def validate_against_schema(schema, actual, path=""):
         # OpenAPI 3.0 style: nullable: true
         return True, None
 
+    # Check enum values before type validation
+    if "enum" in schema:
+        allowed_values = schema["enum"]
+        if actual not in allowed_values:
+            return (
+                False,
+                f"{path}: Value '{actual}' is not one of the allowed enum values: {allowed_values}",
+            )
+
     # Check type
     if schema_type == "object":
         if not isinstance(actual, dict):
