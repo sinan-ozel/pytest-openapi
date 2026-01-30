@@ -1,6 +1,52 @@
 """Generate test cases from OpenAPI schemas."""
 
 
+def generate_invalid_enum_value(schema):
+    """Generate an invalid value for an enum field.
+    
+    Args:
+        schema: OpenAPI schema with enum constraint
+        
+    Returns:
+        A value that is NOT in the enum list
+    """
+    if "enum" not in schema:
+        return None
+    
+    enum_values = schema["enum"]
+    schema_type = schema.get("type", "string")
+    
+    # Generate an invalid value based on type
+    if schema_type == "string":
+        # Try to generate a string that's not in the enum
+        invalid_candidates = [
+            "invalid_enum_value",
+            "not_in_enum",
+            "unknown_value",
+            "INVALID",
+            "__invalid__"
+        ]
+        for candidate in invalid_candidates:
+            if candidate not in enum_values:
+                return candidate
+        # If all candidates are somehow in enum, append something
+        return f"{enum_values[0]}_invalid"
+    elif schema_type == "integer":
+        # Find an integer not in the enum
+        max_enum = max(enum_values) if enum_values else 0
+        invalid = max_enum + 1
+        while invalid in enum_values:
+            invalid += 1
+        return invalid
+    elif schema_type == "number":
+        # Find a number not in the enum
+        max_enum = max(enum_values) if enum_values else 0.0
+        return max_enum + 999.999
+    else:
+        # For other types, try null or a different type
+        return "invalid_value"
+
+
 def generate_string_test_cases(schema):
     """Generate string test cases from schema.
 
@@ -33,7 +79,12 @@ def generate_string_test_cases(schema):
 
     # Check for enum
     elif "enum" in schema:
+        # Add all valid enum values
         test_cases.extend(schema["enum"])
+        # Add one invalid enum value as a negative test case
+        invalid_value = generate_invalid_enum_value(schema)
+        if invalid_value:
+            test_cases.append(invalid_value)
 
     # Check for format
     elif "format" in schema:
@@ -136,7 +187,13 @@ def generate_integer_test_cases(schema, field_name="field"):
 
     # Check for enum
     if "enum" in schema:
-        return schema["enum"], None
+        # Add all valid enum values
+        valid_cases = list(schema["enum"])
+        # Add one invalid enum value as a negative test case
+        invalid_value = generate_invalid_enum_value(schema)
+        if invalid_value:
+            valid_cases.append(invalid_value)
+        return valid_cases, None
 
     # Get constraints
     minimum = schema.get("minimum")
@@ -227,7 +284,13 @@ def generate_number_test_cases(schema, field_name="field"):
 
     # Check for enum
     if "enum" in schema:
-        return schema["enum"], None
+        # Add all valid enum values
+        valid_cases = list(schema["enum"])
+        # Add one invalid enum value as a negative test case
+        invalid_value = generate_invalid_enum_value(schema)
+        if invalid_value:
+            valid_cases.append(invalid_value)
+        return valid_cases, None
 
     # Get constraints
     minimum = schema.get("minimum")

@@ -66,11 +66,17 @@ def test_schema_based_test_case_generation():
     assert isinstance(test_cases[0], list)
     assert 1 <= len(test_cases[0]) <= 3
 
-    # Test enum
+    # Test enum - should include valid values + one invalid
     schema = {"type": "string", "enum": ["red", "green", "blue"]}
     test_cases, warnings = generate_test_cases_for_schema(schema)
-    assert len(test_cases) == 3
-    assert set(test_cases) == {"red", "green", "blue"}
+    assert len(test_cases) == 4  # 3 valid + 1 invalid
+    # Check that all valid values are present
+    assert "red" in test_cases
+    assert "green" in test_cases
+    assert "blue" in test_cases
+    # Check that there's one invalid value (not in the original enum)
+    invalid_values = [v for v in test_cases if v not in ["red", "green", "blue"]]
+    assert len(invalid_values) == 1
 
 
 def test_string_edge_cases():
@@ -293,3 +299,72 @@ def test_validate_enum_fields():
     valid, error = validate_against_schema(schema_array_with_enum, ["red", "yellow", "blue"])
     assert not valid, "Should reject array with invalid enum value"
     assert "not one of the allowed enum values" in error
+
+
+def test_negative_enum_test_cases_generated():
+    """Test that invalid enum values are generated as negative test cases."""
+    from pytest_openapi.case_generator import generate_test_cases_for_schema
+    
+    # Test string enum
+    schema = {"type": "string", "enum": ["option1", "option2", "option3"]}
+    test_cases, _ = generate_test_cases_for_schema(schema)
+    
+    # Should have 3 valid + 1 invalid = 4 total
+    assert len(test_cases) == 4
+    assert "option1" in test_cases
+    assert "option2" in test_cases
+    assert "option3" in test_cases
+    
+    # Find the invalid one
+    invalid_cases = [tc for tc in test_cases if tc not in ["option1", "option2", "option3"]]
+    assert len(invalid_cases) == 1
+    print(f"Generated invalid enum value: {invalid_cases[0]}")
+    
+    # Test integer enum
+    schema_int = {"type": "integer", "enum": [1, 2, 3]}
+    test_cases_int, _ = generate_test_cases_for_schema(schema_int)
+    
+    # Should have 3 valid + 1 invalid = 4 total
+    assert len(test_cases_int) == 4
+    assert 1 in test_cases_int
+    assert 2 in test_cases_int
+    assert 3 in test_cases_int
+    
+    # Find the invalid one
+    invalid_int = [tc for tc in test_cases_int if tc not in [1, 2, 3]]
+    assert len(invalid_int) == 1
+    print(f"Generated invalid integer enum value: {invalid_int[0]}")
+
+
+def test_contains_invalid_enum_value():
+    """Test the helper function that detects invalid enum values in request data."""
+    from pytest_openapi.contract import contains_invalid_enum_value
+    
+    # Simple enum field
+    schema = {"type": "string", "enum": ["active", "inactive"]}
+    assert not contains_invalid_enum_value(schema, "active")
+    assert contains_invalid_enum_value(schema, "deleted")
+    
+    # Enum in object
+    schema_obj = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "status": {"type": "string", "enum": ["active", "inactive", "pending"]}
+        }
+    }
+    
+    valid_data = {"name": "Test", "status": "active"}
+    assert not contains_invalid_enum_value(schema_obj, valid_data)
+    
+    invalid_data = {"name": "Test", "status": "deleted"}
+    assert contains_invalid_enum_value(schema_obj, invalid_data)
+    
+    # Enum in array
+    schema_array = {
+        "type": "array",
+        "items": {"type": "string", "enum": ["red", "green", "blue"]}
+    }
+    
+    assert not contains_invalid_enum_value(schema_array, ["red", "blue"])
+    assert contains_invalid_enum_value(schema_array, ["red", "yellow"])
