@@ -1,0 +1,284 @@
+
+✅ OpenAPI spec validated successfully from http://mock-server-schema-based-api:8000/openapi.json
+   Found 1 path(s)
+
+
+================================================================================
+OpenAPI Contract Test Report
+================================================================================
+
+Test #1 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Lorem ipsum dolor sit amet"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #2 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test with 'single' quotes"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #3 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test with \"double\" quotes"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #4 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test:with:colons"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #5 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test\\with\\backslashes"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #6 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test\nwith\nnewlines"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #7 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test\r\nwith\r\nCRLF"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #8 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test with UTF-8: caf\u00e9, na\u00efve, \u4e2d\u6587, \u65e5\u672c\u8a9e"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #9 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+Test #10 ✅
+POST /test-types
+Requested:
+  {
+    "boolean_field": true,
+    "email_field": "test@example.com",
+    "enum_field": "option1",
+    "integer_field": 1,
+    "number_field": 0.0,
+    "string_field": ""
+  }
+
+Expected 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+Actual 200
+  {
+    "id": 123,
+    "status": "success"
+  }
+
+--------------------------------------------------------------------------------
+
+
+✅ All contract tests passed!
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pyproject.toml
+plugins: openapi-0.1.0, anyio-4.12.0, depends-1.0.1, mock-3.15.1
+collecting ... collected 3 items
+
+test_samples/test_sample_math.py::test_sample_addition PASSED            [ 33%]
+test_samples/test_sample_math.py::test_sample_multiplication PASSED      [ 66%]
+test_samples/test_sample_math.py::test_sample_string_operations PASSED   [100%]
+
+============================== 3 passed in 0.02s ===============================

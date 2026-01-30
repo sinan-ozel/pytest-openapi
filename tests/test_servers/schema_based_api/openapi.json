@@ -62,6 +62,19 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request - Invalid enum value",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "Invalid enum value",
+                  "field": "enum_field",
+                  "value": "invalid_option",
+                  "allowed_values": ["option1", "option2", "option3"]
+                }
+              }
+            }
           }
         }
       }

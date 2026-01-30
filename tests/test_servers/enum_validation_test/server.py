@@ -1,4 +1,4 @@
-"""Mock server that returns invalid enum values to test enum validation."""
+"""Mock server that validates enum values in requests."""
 
 from flask import Flask, jsonify, request
 
@@ -7,42 +7,66 @@ app = Flask(__name__)
 
 @app.route("/openapi.json")
 def openapi():
-    """Return OpenAPI spec with enum in response schema."""
+    """Return OpenAPI spec with enum in request and response schema."""
     return jsonify(
         {
             "openapi": "3.0.0",
             "info": {"title": "Enum Validation Test API", "version": "1.0.0"},
             "paths": {
                 "/status": {
-                    "get": {
-                        "summary": "Get status with enum field",
+                    "post": {
+                        "summary": "Create status with enum field",
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "type": "string",
+                                                "enum": ["active", "inactive", "pending"],
+                                                "description": "Status enum field",
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Name field",
+                                            },
+                                        },
+                                        "required": ["status", "name"],
+                                    },
+                                    "example": {
+                                        "status": "active",
+                                        "name": "Test Item",
+                                    },
+                                }
+                            },
+                        },
                         "responses": {
                             "200": {
-                                "description": "Status response",
+                                "description": "Success",
                                 "content": {
                                     "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "properties": {
-                                                "status": {
-                                                    "type": "string",
-                                                    "enum": ["active", "inactive", "pending"],
-                                                    "description": "Status enum field",
-                                                },
-                                                "code": {
-                                                    "type": "integer",
-                                                    "description": "Status code",
-                                                },
-                                            },
-                                            "required": ["status", "code"],
-                                        },
                                         "example": {
-                                            "status": "active",
-                                            "code": 200,
-                                        },
+                                            "id": 123,
+                                            "status": "created",
+                                        }
                                     }
                                 },
-                            }
+                            },
+                            "400": {
+                                "description": "Bad Request - Invalid enum value",
+                                "content": {
+                                    "application/json": {
+                                        "example": {
+                                            "error": "Invalid enum value",
+                                            "field": "status",
+                                            "value": "invalid_status",
+                                            "allowed_values": ["active", "inactive", "pending"],
+                                        }
+                                    }
+                                },
+                            },
                         },
                     }
                 }
@@ -51,11 +75,23 @@ def openapi():
     )
 
 
-@app.route("/status", methods=["GET"])
-def get_status():
-    """Return a response with INVALID enum value."""
-    # This should fail enum validation because "invalid_status" is not in the enum
-    return jsonify({"status": "invalid_status", "code": 200}), 200
+@app.route("/status", methods=["POST"])
+def create_status():
+    """Validate request enum and return success or error."""
+    data = request.get_json()
+
+    # Validate status field
+    if "status" in data:
+        valid_options = ["active", "inactive", "pending"]
+        if data["status"] not in valid_options:
+            return jsonify({
+                "error": "Invalid enum value",
+                "field": "status",
+                "value": data["status"],
+                "allowed_values": valid_options
+            }), 400
+
+    return jsonify({"id": 123, "status": "created"}), 200
 
 
 if __name__ == "__main__":

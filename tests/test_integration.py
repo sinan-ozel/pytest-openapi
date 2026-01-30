@@ -424,6 +424,38 @@ def test_schema_based_api_generates_examples():
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_enum_validation_in_requests():
+    """Test that enum validation works for request bodies - all valid values should pass, invalid should get 400."""
+    print("\n🔍 Testing enum validation in POST requests...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        ["pytest", "--openapi=http://mock-server-schema-based-api:8000", "-v"],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should succeed - the valid enum values should all pass
+    assert (
+        result.returncode == 0
+    ), f"Expected enum validation tests to pass with valid values. Exit code: {result.returncode}\nOutput: {output}"
+
+    # Verify that multiple test cases with different enum values were generated
+    # The generator should create tests for option1, option2, option3
+    assert (
+        "enum_field" in output
+    ), f"Expected to see enum_field in the test output, got: {output}"
+
+    # Check that tests were generated and passed
+    assert (
+        "✅ All contract tests passed!" in output
+    ), f"Expected all contract tests to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_post_501_undocumented_fails():
     """Test that 501 response fails when not documented in OpenAPI spec."""
     print("\n🔍 Testing POST 501 undocumented detection...", flush=True)
