@@ -75,7 +75,9 @@ def test_schema_based_test_case_generation():
     assert "green" in test_cases
     assert "blue" in test_cases
     # Check that there's one invalid value (not in the original enum)
-    invalid_values = [v for v in test_cases if v not in ["red", "green", "blue"]]
+    invalid_values = [
+        v for v in test_cases if v not in ["red", "green", "blue"]
+    ]
     assert len(invalid_values) == 1
 
 
@@ -131,7 +133,9 @@ def test_validate_nullable_fields():
     assert valid, f"Should accept null for nullable field (3.0): {error}"
 
     valid, error = validate_against_schema(schema_3_0, "test_string")
-    assert valid, f"Should accept string for nullable string field (3.0): {error}"
+    assert (
+        valid
+    ), f"Should accept string for nullable string field (3.0): {error}"
 
     # OpenAPI 3.1 style: type: ["string", "null"]
     schema_3_1 = {"type": ["string", "null"]}
@@ -139,22 +143,32 @@ def test_validate_nullable_fields():
     assert valid, f"Should accept null for nullable field (3.1): {error}"
 
     valid, error = validate_against_schema(schema_3_1, "test_string")
-    assert valid, f"Should accept string for nullable string field (3.1): {error}"
+    assert (
+        valid
+    ), f"Should accept string for nullable string field (3.1): {error}"
 
     # Test with integer nullable
     schema_3_0_int = {"type": "integer", "nullable": True}
     valid, error = validate_against_schema(schema_3_0_int, None)
-    assert valid, f"Should accept null for nullable integer field (3.0): {error}"
+    assert (
+        valid
+    ), f"Should accept null for nullable integer field (3.0): {error}"
 
     valid, error = validate_against_schema(schema_3_0_int, 42)
-    assert valid, f"Should accept integer for nullable integer field (3.0): {error}"
+    assert (
+        valid
+    ), f"Should accept integer for nullable integer field (3.0): {error}"
 
     schema_3_1_int = {"type": ["integer", "null"]}
     valid, error = validate_against_schema(schema_3_1_int, None)
-    assert valid, f"Should accept null for nullable integer field (3.1): {error}"
+    assert (
+        valid
+    ), f"Should accept null for nullable integer field (3.1): {error}"
 
     valid, error = validate_against_schema(schema_3_1_int, 42)
-    assert valid, f"Should accept integer for nullable integer field (3.1): {error}"
+    assert (
+        valid
+    ), f"Should accept integer for nullable integer field (3.1): {error}"
 
     # Test that non-nullable fields still reject null
     schema_not_nullable = {"type": "string"}
@@ -196,8 +210,12 @@ def test_validate_nullable_fields():
         "required": ["available", "total", "status"],
     }
 
-    valid, error = validate_against_schema(schema_object_3_1, response_with_null)
-    assert valid, f"Should accept response with null nullable field (3.1): {error}"
+    valid, error = validate_against_schema(
+        schema_object_3_1, response_with_null
+    )
+    assert (
+        valid
+    ), f"Should accept response with null nullable field (3.1): {error}"
 
 
 def test_validate_enum_fields():
@@ -207,7 +225,7 @@ def test_validate_enum_fields():
     # Test string enum
     schema_string_enum = {
         "type": "string",
-        "enum": ["option1", "option2", "option3"]
+        "enum": ["option1", "option2", "option3"],
     }
 
     # Valid enum value
@@ -224,10 +242,7 @@ def test_validate_enum_fields():
     assert "['option1', 'option2', 'option3']" in error
 
     # Test integer enum
-    schema_integer_enum = {
-        "type": "integer",
-        "enum": [1, 2, 3, 5, 8]
-    }
+    schema_integer_enum = {"type": "integer", "enum": [1, 2, 3, 5, 8]}
 
     valid, error = validate_against_schema(schema_integer_enum, 5)
     assert valid, f"Should accept valid integer enum value: {error}"
@@ -243,32 +258,29 @@ def test_validate_enum_fields():
             "name": {"type": "string"},
             "status": {
                 "type": "string",
-                "enum": ["active", "inactive", "pending"]
+                "enum": ["active", "inactive", "pending"],
             },
-            "priority": {
-                "type": "integer",
-                "enum": [1, 2, 3]
-            }
+            "priority": {"type": "integer", "enum": [1, 2, 3]},
         },
-        "required": ["name", "status"]
+        "required": ["name", "status"],
     }
 
     # Valid object with enum values
-    valid_response = {
-        "name": "Test Item",
-        "status": "active",
-        "priority": 2
-    }
-    valid, error = validate_against_schema(schema_object_with_enum, valid_response)
+    valid_response = {"name": "Test Item", "status": "active", "priority": 2}
+    valid, error = validate_against_schema(
+        schema_object_with_enum, valid_response
+    )
     assert valid, f"Should accept object with valid enum values: {error}"
 
     # Invalid object with bad status enum
     invalid_status_response = {
         "name": "Test Item",
         "status": "deleted",
-        "priority": 2
+        "priority": 2,
     }
-    valid, error = validate_against_schema(schema_object_with_enum, invalid_status_response)
+    valid, error = validate_against_schema(
+        schema_object_with_enum, invalid_status_response
+    )
     assert not valid, "Should reject object with invalid enum value"
     assert "status" in error
     assert "not one of the allowed enum values" in error
@@ -277,9 +289,11 @@ def test_validate_enum_fields():
     invalid_priority_response = {
         "name": "Test Item",
         "status": "active",
-        "priority": 5
+        "priority": 5,
     }
-    valid, error = validate_against_schema(schema_object_with_enum, invalid_priority_response)
+    valid, error = validate_against_schema(
+        schema_object_with_enum, invalid_priority_response
+    )
     assert not valid, "Should reject object with invalid enum value"
     assert "priority" in error
     assert "not one of the allowed enum values" in error
@@ -287,16 +301,17 @@ def test_validate_enum_fields():
     # Test enum in array items
     schema_array_with_enum = {
         "type": "array",
-        "items": {
-            "type": "string",
-            "enum": ["red", "green", "blue"]
-        }
+        "items": {"type": "string", "enum": ["red", "green", "blue"]},
     }
 
-    valid, error = validate_against_schema(schema_array_with_enum, ["red", "blue", "green"])
+    valid, error = validate_against_schema(
+        schema_array_with_enum, ["red", "blue", "green"]
+    )
     assert valid, f"Should accept array with valid enum values: {error}"
 
-    valid, error = validate_against_schema(schema_array_with_enum, ["red", "yellow", "blue"])
+    valid, error = validate_against_schema(
+        schema_array_with_enum, ["red", "yellow", "blue"]
+    )
     assert not valid, "Should reject array with invalid enum value"
     assert "not one of the allowed enum values" in error
 
@@ -316,7 +331,9 @@ def test_negative_enum_test_cases_generated():
     assert "option3" in test_cases
 
     # Find the invalid one
-    invalid_cases = [tc for tc in test_cases if tc not in ["option1", "option2", "option3"]]
+    invalid_cases = [
+        tc for tc in test_cases if tc not in ["option1", "option2", "option3"]
+    ]
     assert len(invalid_cases) == 1
     print(f"Generated invalid enum value: {invalid_cases[0]}")
 
@@ -350,8 +367,11 @@ def test_contains_invalid_enum_value():
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "status": {"type": "string", "enum": ["active", "inactive", "pending"]}
-        }
+            "status": {
+                "type": "string",
+                "enum": ["active", "inactive", "pending"],
+            },
+        },
     }
 
     valid_data = {"name": "Test", "status": "active"}
@@ -363,7 +383,7 @@ def test_contains_invalid_enum_value():
     # Enum in array
     schema_array = {
         "type": "array",
-        "items": {"type": "string", "enum": ["red", "green", "blue"]}
+        "items": {"type": "string", "enum": ["red", "green", "blue"]},
     }
 
     assert not contains_invalid_enum_value(schema_array, ["red", "blue"])

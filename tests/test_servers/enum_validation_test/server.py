@@ -25,7 +25,11 @@ def openapi():
                                         "properties": {
                                             "status": {
                                                 "type": "string",
-                                                "enum": ["active", "inactive", "pending"],
+                                                "enum": [
+                                                    "active",
+                                                    "inactive",
+                                                    "pending",
+                                                ],
                                                 "description": "Status enum field",
                                             },
                                             "name": {
@@ -62,7 +66,11 @@ def openapi():
                                             "error": "Invalid enum value",
                                             "field": "status",
                                             "value": "invalid_status",
-                                            "allowed_values": ["active", "inactive", "pending"],
+                                            "allowed_values": [
+                                                "active",
+                                                "inactive",
+                                                "pending",
+                                            ],
                                         }
                                     }
                                 },
@@ -84,12 +92,17 @@ def create_status():
     if "status" in data:
         valid_options = ["active", "inactive", "pending"]
         if data["status"] not in valid_options:
-            return jsonify({
-                "error": "Invalid enum value",
-                "field": "status",
-                "value": data["status"],
-                "allowed_values": valid_options
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid enum value",
+                        "field": "status",
+                        "value": data["status"],
+                        "allowed_values": valid_options,
+                    }
+                ),
+                400,
+            )
 
     return jsonify({"id": 123, "status": "created"}), 200
 

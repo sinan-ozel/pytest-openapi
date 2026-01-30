@@ -96,12 +96,17 @@ def test_types():
     if "enum_field" in data:
         valid_options = ["option1", "option2", "option3"]
         if data["enum_field"] not in valid_options:
-            return jsonify({
-                "error": "Invalid enum value",
-                "field": "enum_field",
-                "value": data["enum_field"],
-                "allowed_values": valid_options
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid enum value",
+                        "field": "enum_field",
+                        "value": data["enum_field"],
+                        "allowed_values": valid_options,
+                    }
+                ),
+                400,
+            )
 
     return jsonify({"id": 124, "status": "success"}), 200
 
