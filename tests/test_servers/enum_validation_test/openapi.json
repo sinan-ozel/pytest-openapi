@@ -1,0 +1,66 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Enum Validation Test API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/status": {
+      "post": {
+        "summary": "Create status with enum field",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "inactive", "pending"],
+                    "description": "Status enum field"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name field"
+                  }
+                },
+                "required": ["status", "name"]
+              },
+              "example": {
+                "status": "active",
+                "name": "Test Item"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": 123,
+                  "status": "created"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid enum value",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "Invalid enum value",
+                  "field": "status",
+                  "value": "invalid_status",
+                  "allowed_values": ["active", "inactive", "pending"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

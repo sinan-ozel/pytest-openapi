@@ -1,0 +1,4 @@
+- [ ] Add a test to see if it follows declared data types.
+- [ ] Add a test with a regexp
+- [ ] Change the output report to markdown format. allow for the -o flag.
+- [ ] Go over the messages, make them useful.

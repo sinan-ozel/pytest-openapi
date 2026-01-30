@@ -89,8 +89,25 @@ def openapi():
 
 @app.route("/test-types", methods=["POST"])
 def test_types():
-    """Accept any valid request and return success."""
+    """Validate request and return success or error."""
     data = request.get_json()
+
+    # Validate enum_field if present
+    if "enum_field" in data:
+        valid_options = ["option1", "option2", "option3"]
+        if data["enum_field"] not in valid_options:
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid enum value",
+                        "field": "enum_field",
+                        "value": data["enum_field"],
+                        "allowed_values": valid_options,
+                    }
+                ),
+                400,
+            )
+
     return jsonify({"id": 124, "status": "success"}), 200
 
 

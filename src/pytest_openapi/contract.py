@@ -264,6 +264,51 @@ def get_test_report_markdown():
     return "\n".join(report_lines)
 
 
+def contains_invalid_enum_value(schema, data, path=""):
+    """Check if data contains any invalid enum values according to
+    schema.
+
+    Args:
+        schema: OpenAPI schema object
+        data: Request/response data to check
+        path: Current path in object (for tracking)
+
+    Returns:
+        bool: True if data contains an invalid enum value, False otherwise
+    """
+    if not isinstance(schema, dict):
+        return False
+
+    schema_type = schema.get("type")
+
+    # Check if this field has an enum and the value is invalid
+    if "enum" in schema:
+        allowed_values = schema["enum"]
+        # For scalar values (string, int, float, bool), check directly
+        if not isinstance(data, (dict, list)):
+            if data not in allowed_values:
+                return True
+
+    # Recursively check nested objects
+    if schema_type == "object" and isinstance(data, dict):
+        properties = schema.get("properties", {})
+        for prop, prop_schema in properties.items():
+            if prop in data:
+                if contains_invalid_enum_value(
+                    prop_schema, data[prop], f"{path}.{prop}" if path else prop
+                ):
+                    return True
+
+    # Check array items
+    elif schema_type == "array" and isinstance(data, list):
+        items_schema = schema.get("items", {})
+        for i, item in enumerate(data):
+            if contains_invalid_enum_value(items_schema, item, f"{path}[{i}]"):
+                return True
+
+    return False
+
+
 def validate_against_schema(schema, actual, path=""):
     """Validate actual response against JSON schema.
 
@@ -295,10 +340,22 @@ def validate_against_schema(schema, actual, path=""):
                 valid, _ = validate_against_schema(temp_schema, actual, path)
                 if valid:
                     return True, None
-            return False, f"{path}: Value does not match any of the allowed types: {non_null_types}"
+            return (
+                False,
+                f"{path}: Value does not match any of the allowed types: {non_null_types}",
+            )
     elif is_nullable and actual is None:
         # OpenAPI 3.0 style: nullable: true
         return True, None
+
+    # Check enum values before type validation
+    if "enum" in schema:
+        allowed_values = schema["enum"]
+        if actual not in allowed_values:
+            return (
+                False,
+                f"{path}: Value '{actual}' is not one of the allowed enum values: {allowed_values}",
+            )
 
     # Check type
     if schema_type == "object":
@@ -825,6 +882,19 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
     for request_test_case, test_origin in zip(
         request_test_cases, test_case_origins
     ):
+        # Check if this request contains an invalid enum value
+        request_schema = None
+        for media_type, media_obj in request_content.items():
+            if "schema" in media_obj:
+                request_schema = media_obj["schema"]
+                break
+
+        is_negative_test = False
+        if request_schema:
+            is_negative_test = contains_invalid_enum_value(
+                request_schema, request_test_case
+            )
+
         # Make the POST request
         try:
             response = make_request("POST", url, json=request_test_case)
@@ -844,6 +914,73 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
             )
             errors.append(error_msg)
             continue
+
+        # If this is a negative test (invalid enum), expect 400
+        if is_negative_test:
+            # Parse response
+            try:
+                if response.text:
+                    actual_response = response.json()
+                else:
+                    actual_response = ""
+            except Exception:
+                actual_response = response.text
+
+            # Should get 400 Bad Request
+            if response.status_code == 400:
+                # Success - invalid enum was properly rejected
+                log_test_result(
+                    "POST",
+                    path,
+                    request_test_case,
+                    400,
+                    "400 Bad Request (invalid enum value)",
+                    response.status_code,
+                    actual_response,
+                    True,
+                    None,
+                    test_origin,
+                )
+                continue
+            elif response.status_code >= 500:
+                # Server error - this is bad, should have returned 400
+                error_msg = f"Expected 400 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400, not 5xx."
+                log_test_result(
+                    "POST",
+                    path,
+                    request_test_case,
+                    400,
+                    "400 Bad Request (invalid enum value)",
+                    response.status_code,
+                    actual_response,
+                    False,
+                    error_msg,
+                    test_origin,
+                )
+                errors.append(error_msg)
+                continue
+            else:
+                # Got 200/201 or other status
+                # Invalid enum should have been rejected
+                error_msg = (
+                    f"Expected 400 for invalid enum value, got "
+                    f"{response.status_code}. Server should validate "
+                    f"enum values and return 400 Bad Request."
+                )
+                log_test_result(
+                    "POST",
+                    path,
+                    request_test_case,
+                    400,
+                    "400 Bad Request (invalid enum value)",
+                    response.status_code,
+                    actual_response,
+                    False,
+                    error_msg,
+                    test_origin,
+                )
+                errors.append(error_msg)
+                continue
 
         # Check status code (accept both 200 and 201 for POST)
         actual_response = (
@@ -1130,6 +1267,19 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
     for request_test_case, test_origin in zip(
         request_test_cases, test_case_origins
     ):
+        # Check if this request contains an invalid enum value
+        request_schema = None
+        for media_type, media_obj in request_content.items():
+            if "schema" in media_obj:
+                request_schema = media_obj["schema"]
+                break
+
+        is_negative_test = False
+        if request_schema:
+            is_negative_test = contains_invalid_enum_value(
+                request_schema, request_test_case
+            )
+
         # Make the PUT request
         try:
             response = make_request("PUT", url, json=request_test_case)
@@ -1149,6 +1299,68 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
             )
             errors.append(error_msg)
             continue
+
+        # If this is a negative test (invalid enum), expect 400
+        if is_negative_test:
+            # Parse response
+            try:
+                if response.text:
+                    actual_response = response.json()
+                else:
+                    actual_response = ""
+            except Exception:
+                actual_response = response.text
+
+            # Should get 400 Bad Request
+            if response.status_code == 400:
+                # Success - invalid enum was properly rejected
+                log_test_result(
+                    "PUT",
+                    resolved_path,
+                    request_test_case,
+                    400,
+                    "400 Bad Request (invalid enum value)",
+                    response.status_code,
+                    actual_response,
+                    True,
+                    None,
+                    test_origin,
+                )
+                continue
+            elif response.status_code >= 500:
+                # Server error - this is bad, should have returned 400
+                error_msg = f"Expected 400 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400, not 5xx."
+                log_test_result(
+                    "PUT",
+                    resolved_path,
+                    request_test_case,
+                    400,
+                    "400 Bad Request (invalid enum value)",
+                    response.status_code,
+                    actual_response,
+                    False,
+                    error_msg,
+                    test_origin,
+                )
+                errors.append(error_msg)
+                continue
+            else:
+                # Got 200 or other status - invalid enum should have been rejected
+                error_msg = f"Expected 400 for invalid enum value, got {response.status_code}. Server should validate enum values and return 400 Bad Request."
+                log_test_result(
+                    "PUT",
+                    resolved_path,
+                    request_test_case,
+                    400,
+                    "400 Bad Request (invalid enum value)",
+                    response.status_code,
+                    actual_response,
+                    False,
+                    error_msg,
+                    test_origin,
+                )
+                errors.append(error_msg)
+                continue
 
         # Check status code
         actual_response = (
