@@ -24,7 +24,7 @@ def generate_invalid_enum_value(schema):
             "not_in_enum",
             "unknown_value",
             "INVALID",
-            "__invalid__"
+            "__invalid__",
         ]
         for candidate in invalid_candidates:
             if candidate not in enum_values:

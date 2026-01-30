@@ -265,7 +265,8 @@ def get_test_report_markdown():
 
 
 def contains_invalid_enum_value(schema, data, path=""):
-    """Check if data contains any invalid enum values according to schema.
+    """Check if data contains any invalid enum values according to
+    schema.
 
     Args:
         schema: OpenAPI schema object
@@ -339,7 +340,10 @@ def validate_against_schema(schema, actual, path=""):
                 valid, _ = validate_against_schema(temp_schema, actual, path)
                 if valid:
                     return True, None
-            return False, f"{path}: Value does not match any of the allowed types: {non_null_types}"
+            return (
+                False,
+                f"{path}: Value does not match any of the allowed types: {non_null_types}",
+            )
     elif is_nullable and actual is None:
         # OpenAPI 3.0 style: nullable: true
         return True, None
@@ -887,7 +891,9 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
 
         is_negative_test = False
         if request_schema:
-            is_negative_test = contains_invalid_enum_value(request_schema, request_test_case)
+            is_negative_test = contains_invalid_enum_value(
+                request_schema, request_test_case
+            )
 
         # Make the POST request
         try:
@@ -954,8 +960,13 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
                 errors.append(error_msg)
                 continue
             else:
-                # Got 200/201 or other status - invalid enum should have been rejected
-                error_msg = f"Expected 400 for invalid enum value, got {response.status_code}. Server should validate enum values and return 400 Bad Request."
+                # Got 200/201 or other status
+                # Invalid enum should have been rejected
+                error_msg = (
+                    f"Expected 400 for invalid enum value, got "
+                    f"{response.status_code}. Server should validate "
+                    f"enum values and return 400 Bad Request."
+                )
                 log_test_result(
                     "POST",
                     path,
@@ -1265,7 +1276,9 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
 
         is_negative_test = False
         if request_schema:
-            is_negative_test = contains_invalid_enum_value(request_schema, request_test_case)
+            is_negative_test = contains_invalid_enum_value(
+                request_schema, request_test_case
+            )
 
         # Make the PUT request
         try:
