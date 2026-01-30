@@ -266,16 +266,16 @@ def get_test_report_markdown():
 
 def contains_invalid_enum_value(schema, data, path=""):
     """Check if data contains any invalid enum values according to schema.
-    
+
     Args:
         schema: OpenAPI schema object
         data: Request/response data to check
         path: Current path in object (for tracking)
-        
+
     Returns:
         bool: True if data contains an invalid enum value, False otherwise
     """
-    if not isinstance(schema, dict) or not isinstance(data, dict) and not isinstance(data, (str, int, float, bool)):
+    if not isinstance(schema, dict):
         return False
     
     schema_type = schema.get("type")
@@ -283,24 +283,15 @@ def contains_invalid_enum_value(schema, data, path=""):
     # Check if this field has an enum and the value is invalid
     if "enum" in schema:
         allowed_values = schema["enum"]
-        if data not in allowed_values:
-            return True
-    
-    # Recursively check nested objects
-    if schema_type == "object" and isinstance(data, dict):
-        properties = schema.get("properties", {})
-        for prop, prop_schema in properties.items():
-            if prop in data:
-                if contains_invalid_enum_value(prop_schema, data[prop], f"{path}.{prop}" if path else prop):
-                    return True
-    
-    # Check array items
-    elif schema_type == "array" and isinstance(data, list):
+        # For scalar values (string, int, float, bool), check directly
+        if not isinstance(data, (dict, list)):
+            if data not in allowed_values:
+                return True
         items_schema = schema.get("items", {})
         for i, item in enumerate(data):
             if contains_invalid_enum_value(items_schema, item, f"{path}[{i}]"):
                 return True
-    
+
     return False
 
 
@@ -880,11 +871,11 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
             if "schema" in media_obj:
                 request_schema = media_obj["schema"]
                 break
-        
+
         is_negative_test = False
         if request_schema:
             is_negative_test = contains_invalid_enum_value(request_schema, request_test_case)
-        
+
         # Make the POST request
         try:
             response = make_request("POST", url, json=request_test_case)
@@ -915,7 +906,7 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
                     actual_response = ""
             except Exception:
                 actual_response = response.text
-            
+
             # Should get 400 Bad Request
             if response.status_code == 400:
                 # Success - invalid enum was properly rejected
@@ -1258,11 +1249,11 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
             if "schema" in media_obj:
                 request_schema = media_obj["schema"]
                 break
-        
+
         is_negative_test = False
         if request_schema:
             is_negative_test = contains_invalid_enum_value(request_schema, request_test_case)
-        
+
         # Make the PUT request
         try:
             response = make_request("PUT", url, json=request_test_case)
@@ -1293,7 +1284,7 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
                     actual_response = ""
             except Exception:
                 actual_response = response.text
-            
+
             # Should get 400 Bad Request
             if response.status_code == 400:
                 # Success - invalid enum was properly rejected

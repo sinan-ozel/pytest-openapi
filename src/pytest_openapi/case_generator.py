@@ -3,19 +3,19 @@
 
 def generate_invalid_enum_value(schema):
     """Generate an invalid value for an enum field.
-    
+
     Args:
         schema: OpenAPI schema with enum constraint
-        
+
     Returns:
         A value that is NOT in the enum list
     """
     if "enum" not in schema:
         return None
-    
+
     enum_values = schema["enum"]
     schema_type = schema.get("type", "string")
-    
+
     # Generate an invalid value based on type
     if schema_type == "string":
         # Try to generate a string that's not in the enum
