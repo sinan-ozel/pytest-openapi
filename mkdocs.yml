@@ -96,6 +96,7 @@ extra_css:
 
 nav:
   - Overview: index.md
+  - Pytest Timeout: pytest_timeout.md
   - Concepts:
       - Contract Testing: concepts/contract-testing.md
       - OpenAPI Quality Rules: concepts/openapi-quality.md

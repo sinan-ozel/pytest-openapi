@@ -169,7 +169,7 @@ def check_endpoint_schema_descriptions(method, path, operation):
     return errors
 
 
-def validate_openapi_spec(base_url):
+def validate_openapi_spec(base_url, timeout=10):
     """Validate that the OpenAPI spec is available and meets
     requirements.
 
@@ -188,7 +188,7 @@ def validate_openapi_spec(base_url):
 
     # Check 1: Fetch OpenAPI spec
     try:
-        response = requests.get(openapi_url, timeout=10)
+        response = requests.get(openapi_url, timeout=timeout)
         response.raise_for_status()
         spec = response.json()
     except requests.exceptions.RequestException as e:

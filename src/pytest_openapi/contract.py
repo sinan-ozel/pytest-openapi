@@ -549,7 +549,9 @@ def compare_structure(expected, actual):
     return True, None
 
 
-def test_get_endpoint(base_url, path, operation, strict_examples=True):
+def test_get_endpoint(
+    base_url, path, operation, strict_examples=True, timeout=10
+):
     """Test a GET endpoint using the example from the OpenAPI spec.
 
     Args:
@@ -606,7 +608,7 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
 
     # Make the GET request
     try:
-        response = make_request("GET", url)
+        response = make_request("GET", url, timeout=timeout)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
         log_test_result(
@@ -771,7 +773,9 @@ def test_get_endpoint(base_url, path, operation, strict_examples=True):
     return True, None
 
 
-def test_post_endpoint(base_url, path, operation, strict_examples=True):
+def test_post_endpoint(
+    base_url, path, operation, strict_examples=True, timeout=10
+):
     """Test a POST endpoint using examples from OpenAPI spec AND
     generated test cases from schema.
 
@@ -897,7 +901,9 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
 
         # Make the POST request
         try:
-            response = make_request("POST", url, json=request_test_case)
+            response = make_request(
+                "POST", url, json=request_test_case, timeout=timeout
+            )
         except requests.exceptions.RequestException as e:
             error_msg = f"Request failed: {e}"
             log_test_result(
@@ -1142,7 +1148,9 @@ def test_post_endpoint(base_url, path, operation, strict_examples=True):
     return True, None
 
 
-def test_put_endpoint(base_url, path, operation, strict_examples=True):
+def test_put_endpoint(
+    base_url, path, operation, strict_examples=True, timeout=10
+):
     """Test a PUT endpoint using the example from the OpenAPI spec.
 
     Args:
@@ -1282,7 +1290,9 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
 
         # Make the PUT request
         try:
-            response = make_request("PUT", url, json=request_test_case)
+            response = make_request(
+                "PUT", url, json=request_test_case, timeout=timeout
+            )
         except requests.exceptions.RequestException as e:
             error_msg = f"Request failed: {e}"
             log_test_result(
@@ -1519,7 +1529,9 @@ def test_put_endpoint(base_url, path, operation, strict_examples=True):
     return True, None
 
 
-def test_delete_endpoint(base_url, path, operation, strict_examples=True):
+def test_delete_endpoint(
+    base_url, path, operation, strict_examples=True, timeout=10
+):
     """Test a DELETE endpoint.
 
     Args:
@@ -1625,7 +1637,7 @@ def test_delete_endpoint(base_url, path, operation, strict_examples=True):
 
     # Make the DELETE request
     try:
-        response = make_request("DELETE", url)
+        response = make_request("DELETE", url, timeout=timeout)
     except requests.exceptions.RequestException as e:
         error_msg = f"Request failed: {e}"
         log_test_result(

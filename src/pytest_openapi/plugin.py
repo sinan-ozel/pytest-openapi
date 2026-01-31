@@ -29,6 +29,13 @@ def pytest_addoption(parser):
         default=False,
         help="Suppress all output to stdout",
     )
+    group.addoption(
+        "--openapi-timeout",
+        action="store",
+        metavar="SECONDS",
+        default=10,
+        help="Timeout in seconds for HTTP requests to the target API",
+    )
 
 
 def pytest_configure(config):
@@ -46,6 +53,8 @@ def pytest_configure(config):
     markdown_output_file = config.getoption("--openapi-markdown-output")
     no_stdout = config.getoption("--openapi-no-stdout")
 
+    openapi_timeout = float(config.getoption("--openapi-timeout"))
+
     if base_url:
         import pytest
         import requests
@@ -60,11 +69,13 @@ def pytest_configure(config):
         from .openapi import validate_openapi_spec
 
         # Run validation checks
-        validate_openapi_spec(base_url)
+        validate_openapi_spec(base_url, timeout=openapi_timeout)
 
         # Fetch the OpenAPI spec
         try:
-            response = requests.get(f"{base_url}/openapi.json", timeout=10)
+            response = requests.get(
+                f"{base_url}/openapi.json", timeout=openapi_timeout
+            )
             response.raise_for_status()
             spec = response.json()
         except Exception as e:
@@ -72,7 +83,9 @@ def pytest_configure(config):
 
         # Reset server state if /reset endpoint exists (for testing)
         try:
-            reset_response = requests.post(f"{base_url}/reset", timeout=5)
+            reset_response = requests.post(
+                f"{base_url}/reset", timeout=openapi_timeout
+            )
             if reset_response.status_code == 200:
                 print(f"🔄 Server state reset via {base_url}/reset")
         except Exception:
@@ -98,19 +111,35 @@ def pytest_configure(config):
                 # Select appropriate test function
                 if method == "get":
                     success, error = test_get_endpoint(
-                        base_url, path, operation, strict_examples
+                        base_url,
+                        path,
+                        operation,
+                        strict_examples,
+                        timeout=openapi_timeout,
                     )
                 elif method == "post":
                     success, error = test_post_endpoint(
-                        base_url, path, operation, strict_examples
+                        base_url,
+                        path,
+                        operation,
+                        strict_examples,
+                        timeout=openapi_timeout,
                     )
                 elif method == "put":
                     success, error = test_put_endpoint(
-                        base_url, path, operation, strict_examples
+                        base_url,
+                        path,
+                        operation,
+                        strict_examples,
+                        timeout=openapi_timeout,
                     )
                 elif method == "delete":
                     success, error = test_delete_endpoint(
-                        base_url, path, operation, strict_examples
+                        base_url,
+                        path,
+                        operation,
+                        strict_examples,
+                        timeout=openapi_timeout,
                     )
 
                 if not success:
