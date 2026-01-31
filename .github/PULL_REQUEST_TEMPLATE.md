@@ -25,6 +25,4 @@
 
 - [ ] **Documentation:** Add or update documentation for any new functionality
 
-- [ ] **Submit Bugs / Features:** Open an issue or PR for any bugs or feature requests
-
 - [ ] **Dev Release:** After merge, verify the dev release and update version numbers as needed
