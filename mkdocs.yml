@@ -96,6 +96,7 @@ extra_css:
 
 nav:
   - Overview: index.md
+  - Run Tests: run_tests.md
   - Concepts:
       - Contract Testing: concepts/contract-testing.md
       - OpenAPI Quality Rules: concepts/openapi-quality.md

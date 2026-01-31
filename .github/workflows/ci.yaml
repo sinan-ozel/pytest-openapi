@@ -302,6 +302,14 @@ jobs:
             git tag "v${VERSION}"
             git push origin "v${VERSION}"
 
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+          generate_release_notes: true
+
   publish_docs:
     name: Publish Documentation
     runs-on: ubuntu-latest
