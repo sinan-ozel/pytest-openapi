@@ -180,7 +180,9 @@ def pytest_configure(config):
 
             # Include the errors in the pytest.exit message so the failure
             # details appear in pytest's own exit reporting.
-            pytest.exit(f"Contract tests failed:{combined_errors}", returncode=1)
+            pytest.exit(
+                f"Contract tests failed:{combined_errors}", returncode=1
+            )
         else:
             if not no_stdout:
                 print("\n✅ All contract tests passed!")
