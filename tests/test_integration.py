@@ -507,9 +507,10 @@ def test_post_501_documented_passes():
         or "✅ All contract tests passed!" in output
     ), f"Expected validation success, got: {output}"
     # Ensure the report shows 501 as an accepted/documented expected status
-    assert any(("Expected" in line and "200" in line and "501" in line) for line in output.splitlines()), (
-        f"Expected to see 'Expected' and '501' on the same line in output, got: {output}"
-    )
+    assert any(
+        ("Expected" in line and "200" in line and "501" in line)
+        for line in output.splitlines()
+    ), f"Expected to see 'Expected' and '501' on the same line in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
