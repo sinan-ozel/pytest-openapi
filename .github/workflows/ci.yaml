@@ -303,6 +303,7 @@ jobs:
             git push origin "v${VERSION}"
 
       - name: Create GitHub Release
+        if: steps.set-version.outputs.is_stable == 'true'
         uses: softprops/action-gh-release@v2
         with:
           files: |
