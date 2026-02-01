@@ -13,7 +13,7 @@ pytest --openapi=http://localhost:8000 \
 
 - `--openapi`: OpenAPI base URL to test against.
 - `--openapi-no-strict-example-checking`: relaxes strict example validation.
-- `--openapi-markdown-output`: path for a markdown report.
+- `--openapi-markdown-output=FILENAME`: path for a markdown report.
 - `--openapi-no-stdout`: disable plugin stdout output (useful in CI).
 - `--openapi-timeout`: request timeout in seconds.
 

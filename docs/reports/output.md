@@ -40,7 +40,7 @@ Actual 200
 
 ### Markdown Output
 
-Generate a Markdown-formatted report using the `--openapi-markdown-output` flag:
+Generate a Markdown-formatted report using the `--openapi-markdown-output=FILENAME` flag:
 
 ```bash
 pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md

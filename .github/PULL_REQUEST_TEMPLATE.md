@@ -1,6 +1,6 @@
 # 🧪 Pull Request Checklist
 
-- [ ] **Development Environment:** There is a devcontainer if you are using VS Code, you can just run that and you will not need to install anything. Otherwise, rely on `pyprojext.toml`
+**Development Environment:** There is a devcontainer if you are using VS Code, you can just run that and you will not need to install anything. Otherwise, rely on `pyprojext.toml`
 
 - [ ] **Existing Tests:** Run all containerized tests before submitting the PR
   - VS Code task: `test`
@@ -25,4 +25,4 @@
 
 - [ ] **Documentation:** Add or update documentation for any new functionality
 
-- [ ] **Dev Release:** After merge, verify the dev release and update version numbers as needed
+**Dev Release:** After merge, verify the dev release and update version numbers as needed

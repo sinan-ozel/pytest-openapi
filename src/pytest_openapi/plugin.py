@@ -167,11 +167,22 @@ def pytest_configure(config):
 
         # Report results and exit
         if errors:
+            # Always prepare a combined error message so pytest can include
+            # it in its exit output even if stdout capture hides prints.
+            combined_errors = "\n" + "\n".join(errors)
+
             if not no_stdout:
-                print("\n❌ Contract tests failed:")
+                # Print to stdout and flush immediately to minimize risk of
+                # output being lost when pytest exits.
+                print("\n❌ Contract tests failed:", flush=True)
                 for error in errors:
-                    print(error)
-            pytest.exit("Contract tests failed", returncode=1)
+                    print(error, flush=True)
+
+            # Include the errors in the pytest.exit message so the failure
+            # details appear in pytest's own exit reporting.
+            pytest.exit(
+                f"Contract tests failed:{combined_errors}", returncode=1
+            )
         else:
             if not no_stdout:
                 print("\n✅ All contract tests passed!")

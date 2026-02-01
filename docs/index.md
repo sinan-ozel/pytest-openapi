@@ -57,7 +57,7 @@ pytest --openapi=http://localhost:8000 --openapi-no-stdout
 This will:
 - Suppress all output to stdout
 - Still return appropriate exit codes (0 for success, 1 for failure)
-- Can be combined with `--openapi-markdown-output` to only generate a file
+- Can be combined with `--openapi-markdown-output=FILENAME` to only generate a file
 
 **Combined usage**:
 ```bash
