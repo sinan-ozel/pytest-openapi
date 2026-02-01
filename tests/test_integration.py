@@ -693,12 +693,23 @@ def test_openapi_ignore_simple_exact_match():
 
     output = result.stdout + result.stderr
     # Should pass because email_bad is ignored, only /email is tested
-    assert result.returncode == 0, f"Expected tests to pass when ignoring 'email_bad', got: {output}"
-    assert "Ignoring POST /email_bad" in output, f"Expected to see ignore message, got: {output}"
-    assert "✅ All contract tests passed!" in output, f"Expected contract tests to pass, got: {output}"
+    assert (
+        result.returncode == 0
+    ), f"Expected tests to pass when ignoring 'email_bad', got: {output}"
+    assert (
+        "Ignoring POST /email_bad" in output
+    ), f"Expected to see ignore message, got: {output}"
+    assert (
+        "✅ All contract tests passed!" in output
+    ), f"Expected contract tests to pass, got: {output}"
 
 
-@pytest.mark.depends(on=["test_openapi_flag_is_recognized", "test_openapi_ignore_simple_exact_match"])
+@pytest.mark.depends(
+    on=[
+        "test_openapi_flag_is_recognized",
+        "test_openapi_ignore_simple_exact_match",
+    ]
+)
 def test_openapi_ignore_alternation():
     """Ignoring endpoints using an alternation RegExp should allow tests to pass."""
     print("\n🔍 Testing --openapi-ignore alternation...", flush=True)
@@ -718,12 +729,20 @@ def test_openapi_ignore_alternation():
     )
 
     output = result.stdout + result.stderr
-    assert result.returncode == 0, f"Expected tests to pass when ignoring with alternation, got: {output}"
-    assert "Ignoring POST /email_bad" in output, f"Expected to see ignore message, got: {output}"
-    assert "✅ All contract tests passed!" in output, f"Expected contract tests to pass, got: {output}"
+    assert (
+        result.returncode == 0
+    ), f"Expected tests to pass when ignoring with alternation, got: {output}"
+    assert (
+        "Ignoring POST /email_bad" in output
+    ), f"Expected to see ignore message, got: {output}"
+    assert (
+        "✅ All contract tests passed!" in output
+    ), f"Expected contract tests to pass, got: {output}"
 
 
-@pytest.mark.depends(on=["test_openapi_flag_is_recognized", "test_openapi_ignore_alternation"])
+@pytest.mark.depends(
+    on=["test_openapi_flag_is_recognized", "test_openapi_ignore_alternation"]
+)
 def test_openapi_ignore_complex_regex():
     """Ignoring endpoints using a more complex RegExp should allow tests to pass."""
     print("\n🔍 Testing --openapi-ignore complex RegExp...", flush=True)
@@ -743,6 +762,12 @@ def test_openapi_ignore_complex_regex():
     )
 
     output = result.stdout + result.stderr
-    assert result.returncode == 0, f"Expected tests to pass when ignoring with complex regex, got: {output}"
-    assert "Ignoring POST /email_bad" in output, f"Expected to see ignore message, got: {output}"
-    assert "✅ All contract tests passed!" in output, f"Expected contract tests to pass, got: {output}"
+    assert (
+        result.returncode == 0
+    ), f"Expected tests to pass when ignoring with complex regex, got: {output}"
+    assert (
+        "Ignoring POST /email_bad" in output
+    ), f"Expected to see ignore message, got: {output}"
+    assert (
+        "✅ All contract tests passed!" in output
+    ), f"Expected contract tests to pass, got: {output}"
