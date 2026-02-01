@@ -670,3 +670,79 @@ def test_put_example_value_mismatch_passes_lenient():
         "✅ OpenAPI spec validated successfully" in output
         or "✅ All contract tests passed!" in output
     ), f"Expected validation success, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_ignore_simple_exact_match():
+    """Ignoring a single failing endpoint with an exact match should allow tests to pass."""
+    print("\n🔍 Testing --openapi-ignore simple exact match...", flush=True)
+    time.sleep(0.5)
+
+    # Run the entire suite but ignore the failing endpoint via exact match
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-email-server:8000",
+            "--openapi-ignore=email_bad",
+            "-q",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    # Should pass because email_bad is ignored, only /email is tested
+    assert result.returncode == 0, f"Expected tests to pass when ignoring 'email_bad', got: {output}"
+    assert "Ignoring POST /email_bad" in output, f"Expected to see ignore message, got: {output}"
+    assert "✅ All contract tests passed!" in output, f"Expected contract tests to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized", "test_openapi_ignore_simple_exact_match"])
+def test_openapi_ignore_alternation():
+    """Ignoring endpoints using an alternation RegExp should allow tests to pass."""
+    print("\n🔍 Testing --openapi-ignore alternation...", flush=True)
+    time.sleep(0.5)
+
+    # Use an alternation regex that includes the failing endpoint
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-email-server:8000",
+            "--openapi-ignore=(auth|email_bad)",
+            "-q",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, f"Expected tests to pass when ignoring with alternation, got: {output}"
+    assert "Ignoring POST /email_bad" in output, f"Expected to see ignore message, got: {output}"
+    assert "✅ All contract tests passed!" in output, f"Expected contract tests to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized", "test_openapi_ignore_alternation"])
+def test_openapi_ignore_complex_regex():
+    """Ignoring endpoints using a more complex RegExp should allow tests to pass."""
+    print("\n🔍 Testing --openapi-ignore complex RegExp...", flush=True)
+    time.sleep(0.5)
+
+    # Use a RegExp that contains a path-like pattern in alternation with the failing endpoint
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-email-server:8000",
+            "--openapi-ignore=(v[0-9]+/auth|email_bad)",
+            "-q",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, f"Expected tests to pass when ignoring with complex regex, got: {output}"
+    assert "Ignoring POST /email_bad" in output, f"Expected to see ignore message, got: {output}"
+    assert "✅ All contract tests passed!" in output, f"Expected contract tests to pass, got: {output}"

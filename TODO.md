@@ -1,4 +1,6 @@
 - [ ] Add a test to see if it follows declared data types.
 - [ ] Add a test with a regexp
-- [ ] Change the output report to markdown format. allow for the -o flag.
 - [ ] Go over the messages, make them useful.
+- [ ] (Requires LiteLLM) Check if descriptions make sense
+- [ ] (Requires LiteLLM) Check if error messages make sense with 400, and responses are clear with 201.
+- [ ] (Requires LiteLLM) Check if the responses match descriptions.
