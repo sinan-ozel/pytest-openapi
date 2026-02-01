@@ -14,14 +14,11 @@ An opinionated, lightweight **black-box contract tester** against a **live API**
 This tool validates OpenAPI quality, generates test cases from schemas, and verifies that real HTTP responses match the contract.
 This "certifies" that the documentation is complete with descriptions, example, and schema, and that the endpoint behaves as the documentation suggests.
 
+## Guiding Principles:
+1. A service needs to document clearly. (This means schemas, descriptions, and examples)
+2. When the examples and schemas are used, it should respond as expected from the documentation.
+
 📚 **[Read the full documentation](https://sinan-ozel.github.io/pytest-openapi/)**
-
-## Why?
-
-This package tries to simulate the frustrations of API users, as consumers.
-With the rise of "agents", this type of documentation-code match became even
-more important, because LLMs really have trouble choosing tools or using them
-properly when they do not work as intended.
 
 ## ✨ What it does
 
@@ -95,6 +92,15 @@ pytest --openapi=http://localhost:8000
 - `--openapi-no-strict-example-checking`: Use lenient validation for example-based tests
 - `--openapi-markdown-output=FILENAME`: Write test results in Markdown format to the specified file
 - `--openapi-no-stdout`: Suppress all output to stdout
+- `--openapi-ignore=REGEXP`: Completely ignore endpoints whose path matches the given regular expression. Useful to skip known-broken or auth-protected paths.
+
+Examples:
+
+```bash
+pytest --openapi=http://localhost:8000 --openapi-ignore=mcp
+pytest --openapi=http://localhost:8000 --openapi-ignore=(auth|mcp)
+pytest --openapi=http://localhost:8000 --openapi-ignore=(v[0-9]+/auth|mcp)
+```
 
 #### Strict vs Lenient Example Checking
 

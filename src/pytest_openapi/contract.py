@@ -49,6 +49,7 @@ def log_test_result(
     success,
     error_message=None,
     test_case_origin=None,
+    documented_statuses=None,
 ):
     """Log a test result for the final report.
 
@@ -76,6 +77,10 @@ def log_test_result(
         "error_message": error_message,
         "test_case_origin": test_case_origin,
     }
+    # Attach documented status codes (if provided) to the report for clearer expectations
+    report["documented_statuses"] = (
+        list(documented_statuses) if documented_statuses else []
+    )
     test_reports.append(report)
 
 
@@ -136,7 +141,14 @@ def get_test_report():
             except (TypeError, ValueError):
                 actual_body_str = str(test["actual_body"])
 
-        report_lines.append(f"Expected {test['expected_status']}")
+        # Show expected status and any other documented statuses (e.g., 501) as accepted
+        documented = test.get("documented_statuses", []) or []
+        expected_primary = test["expected_status"]
+        statuses = [str(expected_primary)] + [
+            str(s) for s in documented if s != expected_primary
+        ]
+        expected_display = " or ".join(statuses)
+        report_lines.append(f"Expected {expected_display}")
         report_lines.append(f"  {expected_body_str}")
         report_lines.append("")
         report_lines.append(f"Actual {test['actual_status']}")
@@ -228,7 +240,14 @@ def get_test_report_markdown():
 
         report_lines.append("### Expected Response")
         report_lines.append("")
-        report_lines.append(f"**Status:** `{test['expected_status']}`")
+        # Include documented statuses (for example, 501) alongside primary expected status
+        documented = test.get("documented_statuses", []) or []
+        expected_primary = test["expected_status"]
+        statuses = [str(expected_primary)] + [
+            str(s) for s in documented if s != expected_primary
+        ]
+        expected_display = " or ".join(statuses)
+        report_lines.append(f"**Status:** `{expected_display}`")
         report_lines.append("")
         if expected_body_str != "*(empty)*":
             report_lines.append("```json")
@@ -622,6 +641,7 @@ def test_get_endpoint(
             False,
             error_msg,
             "example",
+            documented_statuses=documented_statuses,
         )
         return False, error_msg
 
@@ -677,6 +697,7 @@ def test_get_endpoint(
                 True,
                 None,
                 "example",
+                documented_statuses=documented_statuses,
             )
             return True, None
         else:
@@ -691,6 +712,7 @@ def test_get_endpoint(
                 False,
                 error,
                 "example",
+                documented_statuses=documented_statuses,
             )
             return False, error
 
@@ -707,6 +729,7 @@ def test_get_endpoint(
             True,
             None,
             "example",
+            documented_statuses=documented_statuses,
         )
         return True, None
 
@@ -723,6 +746,7 @@ def test_get_endpoint(
             False,
             error_msg,
             "example",
+            documented_statuses=documented_statuses,
         )
         return False, error_msg
 
@@ -755,6 +779,7 @@ def test_get_endpoint(
             False,
             error,
             "example",
+            documented_statuses=documented_statuses,
         )
         return False, error
 
@@ -917,6 +942,7 @@ def test_post_endpoint(
                 False,
                 error_msg,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             errors.append(error_msg)
             continue
@@ -946,6 +972,7 @@ def test_post_endpoint(
                     True,
                     None,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 continue
             elif response.status_code >= 500:
@@ -962,6 +989,7 @@ def test_post_endpoint(
                     False,
                     error_msg,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 errors.append(error_msg)
                 continue
@@ -984,6 +1012,7 @@ def test_post_endpoint(
                     False,
                     error_msg,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 errors.append(error_msg)
                 continue
@@ -1043,7 +1072,8 @@ def test_post_endpoint(
                     actual_response,
                     True,
                     None,
-                    test_origin,
+                    "example",
+                    documented_statuses=documented_statuses,
                 )
                 continue
             else:
@@ -1058,6 +1088,7 @@ def test_post_endpoint(
                     False,
                     error,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 errors.append(error)
                 continue
@@ -1075,6 +1106,7 @@ def test_post_endpoint(
                 True,
                 None,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             continue
 
@@ -1091,6 +1123,7 @@ def test_post_endpoint(
                 False,
                 error_msg,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             errors.append(error_msg)
             continue
@@ -1123,6 +1156,7 @@ def test_post_endpoint(
                 False,
                 error,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             errors.append(error)
             continue
@@ -1138,6 +1172,7 @@ def test_post_endpoint(
             True,
             None,
             test_origin,
+            documented_statuses=documented_statuses,
         )
 
     if errors:
@@ -1306,6 +1341,7 @@ def test_put_endpoint(
                 False,
                 error_msg,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             errors.append(error_msg)
             continue
@@ -1335,6 +1371,7 @@ def test_put_endpoint(
                     True,
                     None,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 continue
             elif response.status_code >= 500:
@@ -1351,6 +1388,7 @@ def test_put_endpoint(
                     False,
                     error_msg,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 errors.append(error_msg)
                 continue
@@ -1368,6 +1406,7 @@ def test_put_endpoint(
                     False,
                     error_msg,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 errors.append(error_msg)
                 continue
@@ -1426,6 +1465,7 @@ def test_put_endpoint(
                     True,
                     None,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 continue
             else:
@@ -1440,6 +1480,7 @@ def test_put_endpoint(
                     False,
                     error,
                     test_origin,
+                    documented_statuses=documented_statuses,
                 )
                 errors.append(error)
                 continue
@@ -1457,6 +1498,7 @@ def test_put_endpoint(
                 True,
                 None,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             continue
 
@@ -1473,6 +1515,7 @@ def test_put_endpoint(
                 False,
                 error_msg,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             errors.append(error_msg)
             continue
@@ -1505,6 +1548,7 @@ def test_put_endpoint(
                 False,
                 error,
                 test_origin,
+                documented_statuses=documented_statuses,
             )
             errors.append(error)
             continue
@@ -1520,6 +1564,7 @@ def test_put_endpoint(
             True,
             None,
             test_origin,
+            documented_statuses=documented_statuses,
         )
 
     if errors:
@@ -1651,6 +1696,7 @@ def test_delete_endpoint(
             False,
             error_msg,
             "example",
+            documented_statuses=documented_statuses,
         )
         return False, error_msg
 
@@ -1709,6 +1755,7 @@ def test_delete_endpoint(
                 True,
                 None,
                 "example",
+                documented_statuses=documented_statuses,
             )
             return True, None
         else:
@@ -1723,6 +1770,7 @@ def test_delete_endpoint(
                 False,
                 error,
                 "example",
+                documented_statuses=documented_statuses,
             )
             return False, error
 
@@ -1739,6 +1787,7 @@ def test_delete_endpoint(
             True,
             None,
             "example",
+            documented_statuses=documented_statuses,
         )
         return True, None
 
@@ -1755,6 +1804,7 @@ def test_delete_endpoint(
             False,
             error_msg,
             "example",
+            documented_statuses=documented_statuses,
         )
         return False, error_msg
 
@@ -1769,5 +1819,6 @@ def test_delete_endpoint(
         True,
         None,
         "example",
+        documented_statuses=documented_statuses,
     )
     return True, None

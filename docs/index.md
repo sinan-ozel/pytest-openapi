@@ -54,6 +54,17 @@ Suppress all output to stdout. Useful for CI/CD pipelines where you only need th
 pytest --openapi=http://localhost:8000 --openapi-no-stdout
 ```
 
+### `--openapi-ignore=REGEXP`
+Completely ignore endpoints whose path matches the provided regular expression. Use this to skip known-broken, auth-protected, or otherwise irrelevant endpoints during contract testing.
+
+**Examples**:
+
+```bash
+pytest --openapi=http://localhost:8000 --openapi-ignore=mcp
+pytest --openapi=http://localhost:8000 --openapi-ignore=(auth|mcp)
+pytest --openapi=http://localhost:8000 --openapi-ignore=(v[0-9]+/auth|mcp)
+```
+
 This will:
 - Suppress all output to stdout
 - Still return appropriate exit codes (0 for success, 1 for failure)

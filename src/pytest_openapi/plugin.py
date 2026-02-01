@@ -36,6 +36,13 @@ def pytest_addoption(parser):
         default=10,
         help="Timeout in seconds for HTTP requests to the target API",
     )
+    group.addoption(
+        "--openapi-ignore",
+        action="store",
+        metavar="REGEXP",
+        default=None,
+        help="Regular expression; endpoints with paths matching this will be ignored",
+    )
 
 
 def pytest_configure(config):
@@ -52,6 +59,7 @@ def pytest_configure(config):
     )
     markdown_output_file = config.getoption("--openapi-markdown-output")
     no_stdout = config.getoption("--openapi-no-stdout")
+    ignore_pattern = config.getoption("--openapi-ignore")
 
     openapi_timeout = float(config.getoption("--openapi-timeout"))
 
@@ -101,9 +109,29 @@ def pytest_configure(config):
         paths = spec.get("paths", {})
         errors = []
 
+        import re
+
+        ignore_re = None
+        if ignore_pattern:
+            try:
+                ignore_re = re.compile(ignore_pattern)
+            except Exception:
+                pytest.exit(
+                    f"Invalid regular expression for --openapi-ignore: {ignore_pattern}",
+                    returncode=2,
+                )
+
         for method in ["get", "post", "put", "delete"]:
             for path, path_item in paths.items():
                 if method not in path_item:
+                    continue
+
+                # If the path matches the ignore pattern, skip testing it entirely
+                if ignore_re and ignore_re.search(path):
+                    if not no_stdout:
+                        print(
+                            f"🔕 Ignoring {method.upper()} {path} due to --openapi-ignore={ignore_pattern}"
+                        )
                     continue
 
                 operation = path_item[method]
