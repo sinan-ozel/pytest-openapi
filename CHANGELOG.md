@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-01-30
+
+### Added
+- `--openapi-markdown-output=FILENAME` flag to write a Markdown test report to a file and a Markdown report generator producing fenced JSON blocks, summary statistics, and test case origin tracking
+- `--openapi-no-stdout` flag to suppress all report output to stdout (useful for CI)
+- Enum validation support: generate invalid enum values for negative tests and detect invalid enum values in requests; includes a mock enum validation test server and integration tests
+- Integration tests for output formats and new test servers (`tests/test_output_formats.py`, `tests/test_servers/enum_validation_test`)
+- Documentation and example Markdown report; `docs-validate` Docker files and CI/docs updates
+
+### Changed
+- Reports now indicate test case origin (`example` vs `generated`) and include the Markdown report alongside the existing plain-text report
+- Improved lenient-mode handling for documented 404 responses
+
+### Fixed
+- Fix nullable field validation for OpenAPI 3.0 and 3.1
+- Fix 404 handling in lenient mode
+
 ## [0.1.3] - 2026-01-23
 
 ### Added
