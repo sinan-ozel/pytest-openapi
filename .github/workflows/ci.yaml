@@ -149,7 +149,7 @@ jobs:
           echo "Changed files since $LAST_TAG ($BASE_COMMIT):"
           git diff --name-only $BASE_COMMIT HEAD
           if git diff --name-only $BASE_COMMIT HEAD | grep -E '^(src/|README)' > /dev/null; then
-            echo "Detected changes in src/ or README"x
+            echo "Detected changes in src/ or README"
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "No changes detected in src/ or README"
@@ -212,6 +212,7 @@ jobs:
     if: needs.detect_changes.outputs.changed == 'true' && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.event.pull_request.merged == true)  # Only run on push to main or merge to main
     outputs:
       is_stable: ${{ steps.set-version.outputs.is_stable }}
+      version: ${{ steps.set-version.outputs.version }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -266,6 +267,7 @@ jobs:
             echo "Current version (v$CURRENT_VERSION) is greater than last tag ($LAST_TAG) or no tags exist: stable release."
             echo "VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
             echo "is_stable=true" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           else
             # Increment minor version for dev version
             echo "Current version equals last tag, setting development version."
@@ -276,6 +278,7 @@ jobs:
             DEV_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}.dev$(date +%Y%m%d%H%M)"
             echo "VERSION=$DEV_VERSION" >> $GITHUB_ENV
             echo "is_stable=false" >> $GITHUB_OUTPUT
+            echo "version=$DEV_VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Inject Version Into __init__.py
@@ -349,13 +352,19 @@ jobs:
       - name: Get version from published release
         id: get_version
         run: |
-          cd ./src
-          VERSION=$(python -c "from ${{ env.MODULE_NAME }} import __version__; print(__version__)")
+          VERSION="${{ needs.publish.outputs.version }}"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing docs for version: $VERSION"
 
       - name: Deploy documentation with mike
         run: |
           git fetch origin gh-pages --depth=1 || true
+
+          # Check if version already exists
+          if mike list | grep -q "^${{ steps.get_version.outputs.VERSION }}"; then
+            echo "Version ${{ steps.get_version.outputs.VERSION }} already exists in gh-pages, skipping deployment"
+            exit 0
+          fi
+
           mike deploy --push --update-aliases ${{ steps.get_version.outputs.VERSION }} latest
           mike set-default --push latest
