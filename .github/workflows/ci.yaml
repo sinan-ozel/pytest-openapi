@@ -306,6 +306,7 @@ jobs:
         if: steps.set-version.outputs.is_stable == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ env.VERSION }}
           files: |
             dist/*.whl
             dist/*.tar.gz
