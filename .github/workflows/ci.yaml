@@ -359,12 +359,5 @@ jobs:
       - name: Deploy documentation with mike
         run: |
           git fetch origin gh-pages --depth=1 || true
-
-          # Check if version already exists
-          if mike list | grep -q "^${{ steps.get_version.outputs.VERSION }}"; then
-            echo "Version ${{ steps.get_version.outputs.VERSION }} already exists in gh-pages, skipping deployment"
-            exit 0
-          fi
-
           mike deploy --push --update-aliases ${{ steps.get_version.outputs.VERSION }} latest
           mike set-default --push latest
