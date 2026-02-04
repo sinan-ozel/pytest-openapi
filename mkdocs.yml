@@ -52,6 +52,7 @@ extra:
 
 plugins:
   - search
+  - mike
   - mkdocstrings:
       handlers:
         python:
