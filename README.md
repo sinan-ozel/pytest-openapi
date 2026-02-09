@@ -30,6 +30,23 @@ This "certifies" that the documentation is complete with descriptions, example, 
 pytest --openapi=http://localhost:8000
 ```
 
+**Console Output:**
+```
+============================= test session starts ==============================
+collected 27 items
+
+tests/test_openapi_generated.py::test_openapi_endpoint[GET /users] PASSED [  3%]
+tests/test_openapi_generated.py::test_openapi_endpoint[POST /email [example-1]] PASSED [  7%]
+tests/test_openapi_generated.py::test_openapi_endpoint[POST /email [generated-2]] PASSED [ 11%]
+...
+
+📝 Full test report saved to: tests/report.md
+   (Configure output file with: --openapi-markdown-output=<filename>)
+
+======================== 27 passed in 0.95s =========================
+```
+
+**Detailed Report** (`report.md`):
 ```
 Test #10 ✅
 POST /email
@@ -60,7 +77,8 @@ Actual 201
   }
 
 ```
-Generates multiple QA tests.
+
+Each OpenAPI test appears as an individual pytest test item.
 
 ✔️ Validates OpenAPI request/response definitions
 ✔️ Enforces schema field descriptions

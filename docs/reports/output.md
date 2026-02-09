@@ -6,41 +6,28 @@ pytest-openapi generates detailed test reports showing the results of all contra
 
 ### Console Output (Default)
 
-By default, test results are printed to stdout with a human-readable format:
+By default, OpenAPI tests appear as individual pytest test items in the standard pytest output:
 
 ```
-================================================================================
-OpenAPI Contract Test Report
-================================================================================
+============================= test session starts ==============================
+collected 27 items
 
-Test #1 ✅
-📋 Test case from OpenAPI example
-GET /users
+tests/test_openapi_generated.py::test_openapi_endpoint[GET /users] PASSED [  3%]
+tests/test_openapi_generated.py::test_openapi_endpoint[POST /users [example-1]] PASSED [  7%]
+tests/test_openapi_generated.py::test_openapi_endpoint[POST /users [generated-2]] PASSED [ 11%]
+...
 
-Expected 200
-  [
-    {
-      "id": 1,
-      "name": "Alice",
-      "email": "alice@example.com"
-    }
-  ]
-
-Actual 200
-  [
-    {
-      "id": 1,
-      "name": "Alice",
-      "email": "alice@example.com"
-    }
-  ]
-
---------------------------------------------------------------------------------
+======================== 27 passed in 0.95s =========================
 ```
 
-### Markdown Output
+Each OpenAPI test case appears as a separate pytest item with descriptive test IDs:
+- `[GET /users]` - GET endpoint tests
+- `[POST /users [example-1]]` - Example-based POST test
+- `[POST /users [generated-2]]` - Schema-generated POST test
 
-Generate a Markdown-formatted report using the `--openapi-markdown-output=FILENAME` flag:
+### Markdown Output (Default)
+
+A detailed Markdown report is automatically written to a file. By default, the plugin will suggest a location or you can specify one:
 
 ```bash
 pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md
@@ -51,12 +38,19 @@ The markdown report includes:
 - Formatted code blocks for JSON data
 - Clear sections for request/response
 - Test case origin labels (📋 example / 🔧 schema-generated)
+- Detailed error messages for failed tests
 
 See the [example_report.md](../example_report.md) for a sample output.
 
+### Verbose Contract Report
+
+The detailed contract report with full request/response details is **not** printed to stdout by default (only written to the markdown file). This keeps the console output clean and focused on pytest's test results.
+
+If you want to see the full contract report in the console, you can read the markdown file or implement custom reporting.
+
 ### Silent Mode
 
-Suppress stdout output using `--openapi-no-stdout`:
+Suppress all stdout output using `--openapi-no-stdout`:
 
 ```bash
 pytest --openapi=http://localhost:8000 --openapi-no-stdout

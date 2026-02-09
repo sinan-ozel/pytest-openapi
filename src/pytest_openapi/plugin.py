@@ -46,35 +46,29 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    """Configure pytest with OpenAPI marker."""
+    """Configure pytest with OpenAPI marker and validate spec."""
     config.addinivalue_line(
         "markers",
         "openapi: OpenAPI contract tests",
     )
 
-    # If --openapi flag is provided, validate and test the OpenAPI spec
+    # If --openapi flag is provided, validate and store the OpenAPI spec
     base_url = config.getoption("--openapi")
-    strict_examples = not config.getoption(
-        "--openapi-no-strict-example-checking"
-    )
-    markdown_output_file = config.getoption("--openapi-markdown-output")
-    no_stdout = config.getoption("--openapi-no-stdout")
-    ignore_pattern = config.getoption("--openapi-ignore")
-
-    openapi_timeout = float(config.getoption("--openapi-timeout"))
 
     if base_url:
         import pytest
         import requests
+        import re
 
-        from .contract import (
-            get_test_report,
-            test_delete_endpoint,
-            test_get_endpoint,
-            test_post_endpoint,
-            test_put_endpoint,
-        )
         from .openapi import validate_openapi_spec
+
+        strict_examples = not config.getoption(
+            "--openapi-no-strict-example-checking"
+        )
+        markdown_output_file = config.getoption("--openapi-markdown-output")
+        no_stdout = config.getoption("--openapi-no-stdout")
+        ignore_pattern = config.getoption("--openapi-ignore")
+        openapi_timeout = float(config.getoption("--openapi-timeout"))
 
         # Run validation checks
         validate_openapi_spec(base_url, timeout=openapi_timeout)
@@ -95,22 +89,13 @@ def pytest_configure(config):
                 f"{base_url}/reset", timeout=openapi_timeout
             )
             if reset_response.status_code == 200:
-                print(f"🔄 Server state reset via {base_url}/reset")
+                if not no_stdout:
+                    print(f"🔄 Server state reset via {base_url}/reset")
         except Exception:
             # Server doesn't have /reset endpoint or it failed - that's OK
             pass
 
-        # Run contract tests on all endpoints
-        # Execute tests grouped by HTTP method to avoid state pollution:
-        # 1. GET (read initial state)
-        # 2. POST (create new resources)
-        # 3. PUT (update resources)
-        # 4. DELETE (remove resources)
-        paths = spec.get("paths", {})
-        errors = []
-
-        import re
-
+        # Compile ignore pattern if provided
         ignore_re = None
         if ignore_pattern:
             try:
@@ -121,100 +106,138 @@ def pytest_configure(config):
                     returncode=2,
                 )
 
-        for method in ["get", "post", "put", "delete"]:
-            for path, path_item in paths.items():
-                if method not in path_item:
-                    continue
+        # Store configuration on the config object for use during test generation and execution
+        config._openapi_base_url = base_url
+        config._openapi_spec = spec
+        config._openapi_strict_examples = strict_examples
+        config._openapi_timeout = openapi_timeout
+        config._openapi_markdown_output = markdown_output_file
+        config._openapi_no_stdout = no_stdout
+        config._openapi_ignore_re = ignore_re
+        config._openapi_ignore_pattern = ignore_pattern
 
-                # If the path matches the ignore pattern, skip testing it entirely
-                if ignore_re and ignore_re.search(path):
-                    if not no_stdout:
-                        print(
-                            f"🔕 Ignoring {method.upper()} {path} due to --openapi-ignore={ignore_pattern}"
-                        )
-                    continue
+        if not no_stdout:
+            print(f"\n✅ OpenAPI spec validated and loaded from {base_url}/openapi.json")
 
-                operation = path_item[method]
 
-                # Select appropriate test function
-                if method == "get":
-                    success, error = test_get_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
-                    )
-                elif method == "post":
-                    success, error = test_post_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
-                    )
-                elif method == "put":
-                    success, error = test_put_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
-                    )
-                elif method == "delete":
-                    success, error = test_delete_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
-                    )
+        if not no_stdout:
+            print(f"\n✅ OpenAPI spec validated and loaded from {base_url}/openapi.json")
 
-                if not success:
-                    errors.append(f"  {method.upper()} {path}: {error}")
 
-        # Generate and save/display report
-        # Write markdown report to file if requested
-        if markdown_output_file:
-            from .contract import get_test_report_markdown
+def pytest_generate_tests(metafunc):
+    """Generate test cases dynamically for OpenAPI endpoints.
 
-            try:
-                with open(markdown_output_file, "w", encoding="utf-8") as f:
-                    f.write(get_test_report_markdown())
+    This hook is called for each test function. If the test function has 'openapi_test_case'
+    as a parameter, we'll generate test cases from the OpenAPI spec.
+    """
+    if "openapi_test_case" not in metafunc.fixturenames:
+        return
+
+    # Check if --openapi flag was provided
+    base_url = metafunc.config.getoption("--openapi", default=None)
+    if not base_url:
+        # No OpenAPI testing requested, skip
+        return
+
+    # Get stored configuration
+    spec = getattr(metafunc.config, "_openapi_spec", None)
+    if not spec:
+        return
+
+    ignore_re = getattr(metafunc.config, "_openapi_ignore_re", None)
+    ignore_pattern = getattr(metafunc.config, "_openapi_ignore_pattern", None)
+    no_stdout = getattr(metafunc.config, "_openapi_no_stdout", False)
+
+    # Collect all test cases from the OpenAPI spec
+    test_cases = []
+    test_ids = []
+
+    from .case_generator import generate_test_cases_for_schema
+
+    paths = spec.get("paths", {})
+
+    # Execute tests in order: GET -> POST -> PUT -> DELETE
+    for method in ["get", "post", "put", "delete"]:
+        for path, path_item in paths.items():
+            if method not in path_item:
+                continue
+
+            # Check if path should be ignored
+            if ignore_re and ignore_re.search(path):
                 if not no_stdout:
                     print(
-                        f"\n📝 Markdown report written to: {markdown_output_file}"
+                        f"🔕 Ignoring {method.upper()} {path} due to --openapi-ignore={ignore_pattern}"
                     )
-            except Exception as e:
-                print(f"\n⚠️  Warning: Failed to write markdown report: {e}")
+                continue
 
-        # Display report to stdout unless suppressed
-        if not no_stdout:
-            print("\n")
-            print(get_test_report())
+            operation = path_item[method]
 
-        # Report results and exit
-        if errors:
-            # Always prepare a combined error message so pytest can include
-            # it in its exit output even if stdout capture hides prints.
-            combined_errors = "\n" + "\n".join(errors)
+            # For GET and DELETE: typically no request body, one test per endpoint
+            if method in ["get", "delete"]:
+                test_case = {
+                    "method": method,
+                    "path": path,
+                    "operation": operation,
+                    "request_body": None,
+                    "test_origin": "example",
+                }
+                test_cases.append(test_case)
+                test_ids.append(f"{method.upper()} {path}")
 
-            if not no_stdout:
-                # Print to stdout and flush immediately to minimize risk of
-                # output being lost when pytest exits.
-                print("\n❌ Contract tests failed:", flush=True)
-                for error in errors:
-                    print(error, flush=True)
+            # For POST and PUT: generate test cases from examples and schemas
+            elif method in ["post", "put"]:
+                request_body_def = operation.get("requestBody", {})
+                request_content = request_body_def.get("content", {})
 
-            # Include the errors in the pytest.exit message so the failure
-            # details appear in pytest's own exit reporting.
-            pytest.exit(
-                f"Contract tests failed:{combined_errors}", returncode=1
-            )
-        else:
-            if not no_stdout:
-                print("\n✅ All contract tests passed!")
-            # Don't call sys.exit(0) - let pytest finish normally
+                request_test_cases = []
+                test_origins = []
+
+                for media_type, media_obj in request_content.items():
+                    # Collect explicit examples
+                    if "example" in media_obj:
+                        request_test_cases.append(media_obj["example"])
+                        test_origins.append("example")
+                    if "examples" in media_obj:
+                        examples_dict = media_obj["examples"]
+                        for ex_name, ex_obj in examples_dict.items():
+                            if "value" in ex_obj:
+                                request_test_cases.append(ex_obj["value"])
+                                test_origins.append("example")
+
+                    # Generate test cases from schema
+                    if "schema" in media_obj:
+                        schema = media_obj["schema"]
+                        generated, _ = generate_test_cases_for_schema(
+                            schema, "request_body"
+                        )
+                        for gen_case in generated:
+                            request_test_cases.append(gen_case)
+                            test_origins.append("generated")
+                    break
+
+                # Create a test case for each request body variant
+                for i, (req_body, origin) in enumerate(zip(request_test_cases, test_origins)):
+                    test_case = {
+                        "method": method,
+                        "path": path,
+                        "operation": operation,
+                        "request_body": req_body,
+                        "test_origin": origin,
+                    }
+                    test_cases.append(test_case)
+
+                    # Create descriptive test ID
+                    origin_marker = "example" if origin == "example" else "generated"
+                    test_id = f"{method.upper()} {path} [{origin_marker}-{i+1}]"
+                    test_ids.append(test_id)
+
+    # Parametrize the test function with all collected test cases
+    if test_cases:
+        metafunc.parametrize(
+            "openapi_test_case",
+            test_cases,
+            ids=test_ids,
+        )
 
 
 def pytest_unconfigure(config):
@@ -228,3 +251,35 @@ def pytest_unconfigure(config):
     # No specific cleanup needed for pytest-openapi,
     # but defining this hook prevents the IndexError in pytest-depends
     pass
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Generate and save reports after all tests complete."""
+    config = session.config
+
+    # Only generate reports if --openapi was used
+    if not hasattr(config, "_openapi_base_url"):
+        return
+
+    markdown_output_file = getattr(config, "_openapi_markdown_output", None)
+    no_stdout = getattr(config, "_openapi_no_stdout", False)
+
+    from .contract import get_test_report_markdown
+
+    # Write markdown report to file if requested
+    if markdown_output_file:
+        try:
+            with open(markdown_output_file, "w", encoding="utf-8") as f:
+                f.write(get_test_report_markdown())
+            if not no_stdout:
+                print(
+                    f"\n📝 Full test report saved to: {markdown_output_file}"
+                )
+                print(
+                    f"   (Configure output file with: --openapi-markdown-output=<filename>)"
+                )
+        except Exception as e:
+            print(f"\n⚠️  Warning: Failed to write markdown report: {e}")
+
+    # Don't display the full report to stdout anymore since tests appear as individual pytest items
+    # Users can see test results in pytest's normal output

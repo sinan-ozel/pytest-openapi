@@ -8,40 +8,73 @@ if [ -z "$SERVICE" ]; then
   exit 2
 fi
 
-# Start service detached
-docker compose -f tests/docker-compose.yaml --project-directory tests up -d "$SERVICE"
+# Strip "mock-server-" prefix and replace hyphens with underscores
+SERVICE_DIR="${SERVICE#mock-server-}"
+SERVICE_DIR="${SERVICE_DIR//-/_}"
 
-# Wait up to 30s for the service to respond on /openapi.json
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Create a docker network for this test run
+NETWORK_NAME="pytest-openapi-test-$$"
+echo "🌐 Creating network: $NETWORK_NAME"
+docker network create "$NETWORK_NAME" 2>/dev/null || true
+
+# Cleanup function
+cleanup() {
+  echo ""
+  echo "🧹 Cleaning up..."
+  docker rm -f "mock-server-$$" 2>/dev/null || true
+  docker network rm "$NETWORK_NAME" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Build the mock server image
+echo "🔨 Building mock server image..."
+docker build -t "pytest-openapi-${SERVICE}" -f "${PROJECT_ROOT}/tests/test_servers/${SERVICE_DIR}/Dockerfile" "${PROJECT_ROOT}/tests/test_servers/${SERVICE_DIR}"
+
+# Start the mock server on the network
+echo "🚀 Starting mock server: $SERVICE"
+docker run -d \
+  --name "mock-server-$$" \
+  --network "$NETWORK_NAME" \
+  --network-alias mock-server \
+  "pytest-openapi-${SERVICE}"
+
+# Wait for the mock server to be ready
+echo "⏳ Waiting for mock server to be ready..."
 READY=1
 for i in $(seq 1 30); do
-  # Try probing the host-mapped port first (safer when curl isn't in the image)
-  HOST_PORT=$(docker compose -f tests/docker-compose.yaml --project-directory tests port "$SERVICE" 8000 2>/dev/null | sed -n 's/.*://p' || true)
-  if [ -n "$HOST_PORT" ]; then
-    if curl -fsS "http://localhost:${HOST_PORT}/openapi.json" >/dev/null 2>&1; then
-      READY=0
-      break
-    fi
-  else
-    # Fallback: try to curl from inside the container
-    if docker compose -f tests/docker-compose.yaml --project-directory tests exec -T "$SERVICE" sh -c 'curl -fsS http://localhost:8000/openapi.json >/dev/null' 2>/dev/null; then
-      READY=0
-      break
-    fi
+  # Check if Flask server has started by looking for "Running on" in logs
+  if docker logs "mock-server-$$" 2>&1 | grep -q "Running on"; then
+    READY=0
+    echo "✅ Mock server is ready"
+    break
   fi
   sleep 1
 done
 
 if [ "$READY" -ne 0 ]; then
   echo "❌ Service $SERVICE failed to become ready within 30s"
-  docker compose -f tests/docker-compose.yaml --project-directory tests rm -fs "$SERVICE" || true
   exit 3
 fi
 
-# Run pytest in the test container against the service
-docker compose -f tests/docker-compose.yaml --project-directory tests run --rm test pytest --openapi=http://"$SERVICE":8000 /app/test_samples/ -q
+# Build the test runner image
+echo "🔨 Building test runner image..."
+docker build -t pytest-openapi-test-runner -f "${PROJECT_ROOT}/.vscode/Dockerfile.test" "${PROJECT_ROOT}"
+
+# Run pytest in a new container with source mounted
+echo "🧪 Running pytest with --openapi=http://mock-server:8000"
+echo "=================================================="
+docker run --rm -it \
+  --network "$NETWORK_NAME" \
+  -v "${PROJECT_ROOT}/src:/workspace/src" \
+  -v "${PROJECT_ROOT}/tests:/workspace/tests" \
+  -e PYTHONPATH=/workspace/src \
+  pytest-openapi-test-runner \
+  pytest --openapi=http://mock-server:8000 --openapi-markdown-output=/workspace/tests/report.md /workspace/tests/test_openapi_generated.py /workspace/tests/test_samples/ -v
+
 RC=$?
-
-# Clean up the service container
-docker compose -f tests/docker-compose.yaml --project-directory tests rm -fs "$SERVICE" || true
-
+echo "=================================================="
 exit $RC

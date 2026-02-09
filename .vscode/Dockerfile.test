@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+
+WORKDIR /workspace
+
+# Install dependencies
+RUN pip install --upgrade pip
+
+# Install the package and test dependencies
+RUN pip install pytest requests jsonschema exrex pytest-depends pytest-mock
+
+CMD ["bash"]
