@@ -184,6 +184,10 @@ def pytest_collection_modifyitems(session, config, items):
     test_items = []
     paths = spec.get("paths", {})
 
+    # Track counts for reporting
+    example_count = 0
+    generated_count = 0
+
     # Execute tests in order: GET -> POST -> PUT -> DELETE
     for method in ["get", "post", "put", "delete"]:
         for path, path_item in paths.items():
@@ -231,6 +235,7 @@ def pytest_collection_modifyitems(session, config, items):
                 )
                 item.add_marker(pytest.mark.openapi)
                 test_items.append(item)
+                example_count += 1  # GET/DELETE tests are based on examples
 
             # For POST and PUT: generate test cases from examples and schemas
             elif method in ["post", "put"]:
@@ -308,25 +313,47 @@ def pytest_collection_modifyitems(session, config, items):
                     item.add_marker(pytest.mark.openapi)
                     test_items.append(item)
 
+                    # Track origin
+                    if origin == "example":
+                        example_count += 1
+                    else:
+                        generated_count += 1
+
     # Add all OpenAPI test items to the collection
     items.extend(test_items)
 
-    # Store the count for reporting after collection
-    config._openapi_test_count = len(test_items)
+    # Store the counts for reporting after collection
+    config._openapi_example_count = example_count
+    config._openapi_generated_count = generated_count
 
 
 def pytest_collection_finish(session):
     """Print message about OpenAPI tests after collection."""
+
     config = session.config
 
     # Only print if we added OpenAPI tests
-    if hasattr(config, "_openapi_test_count"):
-        count = config._openapi_test_count
+    if hasattr(config, "_openapi_example_count"):
+        example_count = config._openapi_example_count
+        generated_count = config._openapi_generated_count
+        total_count = example_count + generated_count
         no_stdout = getattr(config, "_openapi_no_stdout", False)
 
-        if count > 0 and not no_stdout:
-            item_word = "item" if count == 1 else "items"
-            print(f"created {count} {item_word} based on openapi schema")
+        if total_count > 0 and not no_stdout:
+            if example_count > 0:
+                example_word = "item" if example_count == 1 else "items"
+                print(
+                    f"created {example_count} {example_word} from openapi examples"
+                )
+            if generated_count > 0:
+                generated_word = "item" if generated_count == 1 else "items"
+                print(
+                    f"created {generated_count} {generated_word} generated from schema"
+                )
+
+
+# Use hookimpl with trylast to ensure this runs after terminal reporter
+pytest_collection_finish.trylast = True
 
 
 def pytest_unconfigure(config):

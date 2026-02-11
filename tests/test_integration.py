@@ -877,3 +877,77 @@ def test_openapi_tests_all_pass_in_non_verbose_mode():
     assert (
         "skipped" not in output.lower()
     ), f"Expected no 'skipped' in test summary, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_collection_message_shows_test_origins():
+    """Test that collection message shows breakdown of example vs generated tests."""
+    print(
+        "\n🔍 Testing OpenAPI collection message format...", flush=True
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-put-response-missing-key:8000",
+            "/app/test_samples/",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Check that the messages appear on separate lines with exact wording
+    # The message should say "created X item(s) from openapi examples"
+    assert (
+        "from openapi examples" in output
+    ), f"Expected 'from openapi examples' message, got: {output}"
+
+    # The message should say "created X item(s) generated from schema"
+    assert (
+        "generated from schema" in output
+    ), f"Expected 'generated from schema' message, got: {output}"
+
+    # Verify the messages appear after "collected" line
+    lines = output.split("\n")
+    collected_line_idx = None
+    examples_line_idx = None
+    schema_line_idx = None
+
+    for i, line in enumerate(lines):
+        if "collected" in line and "items" in line:
+            collected_line_idx = i
+        if "from openapi examples" in line:
+            examples_line_idx = i
+        if "generated from schema" in line:
+            schema_line_idx = i
+
+    assert (
+        collected_line_idx is not None
+    ), f"Expected to find 'collected X items' line, got: {output}"
+
+    assert (
+        examples_line_idx is not None
+    ), f"Expected to find 'from openapi examples' line, got: {output}"
+
+    assert (
+        schema_line_idx is not None
+    ), f"Expected to find 'generated from schema' line, got: {output}"
+
+    # Verify messages appear AFTER collected line
+    assert (
+        examples_line_idx > collected_line_idx
+    ), f"Expected 'from openapi examples' after 'collected', got: {output}"
+
+    assert (
+        schema_line_idx > collected_line_idx
+    ), f"Expected 'generated from schema' after 'collected', got: {output}"
+
+    # Verify the two messages are on separate consecutive lines
+    assert (
+        schema_line_idx == examples_line_idx + 1
+    ), f"Expected messages on consecutive lines, got examples at {examples_line_idx}, schema at {schema_line_idx}"
