@@ -4,13 +4,7 @@
 - [ ] (Requires LiteLLM) Check if descriptions make sense
 - [ ] (Requires LiteLLM) Check if error messages make sense with 400, and responses are clear with 201.
 - [ ] (Requires LiteLLM) Check if the responses match descriptions.
-- [ ] Check the new output with -vv
-- [ ] Check the new output with -vvv
-- [ ] Check the new output with -vvvv
-- [ ] Check report.md
 - [ ] Removed check for "enum_field" in verbose output - put this back
 - [ ] Remove "test case created from schema" in the output - put this back.
 - [ ] Removed assertion looking for "Expected" and status codes in same line (old verbose format) Put this back
-- [x] Add the test "module" name in the output with no verbosity.
-- [x] Add something like "pytest-openapi added 10 tests" under "collected 3 items" and add an integration test to check.
 

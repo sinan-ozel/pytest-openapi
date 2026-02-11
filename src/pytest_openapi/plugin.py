@@ -172,12 +172,15 @@ def pytest_runtest_logreport(report):
                 if contract.test_reports:
                     test = contract.test_reports[-1]
 
+                    # Check if we should truncate (vv) or show full (vvv+)
+                    use_truncate = config.option.verbose == 2
+
                     # Helper to truncate strings at 50 chars
                     def truncate(s, max_len=50):
                         if s is None:
                             return "None"
                         s_str = str(s)
-                        if len(s_str) > max_len:
+                        if use_truncate and len(s_str) > max_len:
                             return s_str[:max_len] + "..."
                         return s_str
 
@@ -186,7 +189,7 @@ def pytest_runtest_logreport(report):
                         import json
 
                         try:
-                            request_str = json.dumps(test["request_body"])
+                            request_str = json.dumps(test["request_body"], indent=2 if not use_truncate else None)
                         except:
                             request_str = str(test["request_body"])
                     else:
@@ -195,7 +198,7 @@ def pytest_runtest_logreport(report):
                     # Format expected response
                     try:
                         expected_str = (
-                            json.dumps(test["expected_body"])
+                            json.dumps(test["expected_body"], indent=2 if not use_truncate else None)
                             if test["expected_body"]
                             else "None"
                         )
@@ -205,7 +208,7 @@ def pytest_runtest_logreport(report):
                     # Format actual response
                     try:
                         actual_str = (
-                            json.dumps(test["actual_body"])
+                            json.dumps(test["actual_body"], indent=2 if not use_truncate else None)
                             if test["actual_body"]
                             else "None"
                         )

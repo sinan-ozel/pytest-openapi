@@ -1034,3 +1034,67 @@ def test_openapi_very_verbose_mode_shows_request_response():
                 break
     else:
         pytest.fail(f"Expected to find Request/Expected/Actual on consecutive lines, got: {output}")
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_very_very_verbose_mode_shows_full_content():
+    """Test that -vvv shows full request/response without truncation."""
+    print(
+        "\n🔍 Testing OpenAPI very very verbose mode (-vvv)...", flush=True
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-500-error:8000",
+            "/app/test_samples/",
+            "-vvv",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should have failures due to 500 error
+    assert (
+        result.returncode != 0
+    ), f"Expected tests to fail due to 500 error, got: {output}"
+
+    # Check for the three-line format
+    assert (
+        "Request:" in output
+    ), f"Expected 'Request:' line in -vvv output, got: {output}"
+
+    assert (
+        "Expected [" in output
+    ), f"Expected 'Expected [XXX]:' line in -vvv output, got: {output}"
+
+    assert (
+        "Actual [" in output
+    ), f"Expected 'Actual [XXX]:' line in -vvv output, got: {output}"
+
+    # Verify NO truncation is happening (should NOT see "..." in the output)
+    lines = output.split("\n")
+    request_lines = [l for l in lines if "Request:" in l]
+    expected_lines = [l for l in lines if "Expected [" in l]
+    actual_lines = [l for l in lines if "Actual [" in l]
+
+    # Should have at least one of each
+    assert (
+        len(request_lines) > 0
+    ), f"Expected at least one 'Request:' line, got: {output}"
+
+    # In -vvv mode, content should NOT be truncated
+    # Check that we don't see "..." truncation markers in the JSON output lines
+    for line in request_lines + expected_lines + actual_lines:
+        # The line itself should not end with "..." (which indicates truncation)
+        # Note: JSON strings can contain "..." so we check for the truncation pattern
+        if "None" not in line:  # Skip lines that just say "None"
+            # If the line has JSON content, it should not have the truncation marker at the end
+            if "{" in line or "[" in line:
+                assert (
+                    not line.rstrip().endswith("...")
+                ), f"Expected no truncation in -vvv mode, but found '...' in: {line}"
