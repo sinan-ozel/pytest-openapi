@@ -757,3 +757,123 @@ def test_openapi_ignore_complex_regex():
     assert (
         "passed" in output.lower()
     ), f"Expected to see passing tests, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_tests_show_dots_in_non_verbose_mode():
+    """Test that OpenAPI tests show [pytest-openapi] label and dots/F in non-verbose mode output."""
+    print(
+        "\n🔍 Testing OpenAPI test output in non-verbose mode...", flush=True
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-put-response-missing-key:8000",
+            "/app/test_samples/",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should fail because the PUT endpoint is missing the 'updated' key
+    assert (
+        result.returncode != 0
+    ), f"Expected tests to fail due to missing key, got: {output}"
+
+    # Check for the [pytest-openapi] label
+    assert (
+        "[pytest-openapi]" in output
+    ), f"Expected to see '[pytest-openapi]' label in output, got: {output}"
+
+    # Check that dots and F appear in the output (non-verbose mode)
+    # Should see something like: "tests/test_samples/test_sample_math.py .."
+    # Then: "\n[pytest-openapi] . F.........."
+    assert (
+        output.count(".") > 5
+    ), f"Expected to see dots in non-verbose output, got: {output}"
+
+    assert (
+        " F " in output or "F." in output or ".F" in output
+    ), f"Expected to see F (failure) in non-verbose output, got: {output}"
+
+    # Verify the failure message contains the expected error
+    assert (
+        "Missing key" in output or "missing key" in output.lower()
+    ), f"Expected error about missing key, got: {output}"
+
+    # Verify pytest correctly reports the number of failures
+    # Should show something like "12 passed, 1 failed" in the summary
+    assert (
+        "1 failed" in output
+    ), f"Expected '1 failed' in test summary, got: {output}"
+
+    # Should also show some passed tests
+    assert (
+        "passed" in output
+    ), f"Expected some passed tests in summary, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_tests_all_pass_in_non_verbose_mode():
+    """Test that all OpenAPI tests pass and show [pytest-openapi] label in non-verbose mode."""
+    print(
+        "\n🔍 Testing all OpenAPI tests passing in non-verbose mode...", flush=True
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-schema-based-api:8000",
+            "/app/test_samples/",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should pass - all tests should succeed
+    assert (
+        result.returncode == 0
+    ), f"Expected all tests to pass, got: {output}"
+
+    # Check for the [pytest-openapi] label
+    assert (
+        "[pytest-openapi]" in output
+    ), f"Expected to see '[pytest-openapi]' label in output, got: {output}"
+
+    # Check that dots appear in the output (non-verbose mode)
+    assert (
+        output.count(".") > 5
+    ), f"Expected to see dots in non-verbose output, got: {output}"
+
+    # Should not have any failures or skips
+    assert (
+        " F " not in output and "F." not in output and ".F" not in output
+    ), f"Expected no failures (F) in non-verbose output, got: {output}"
+
+    assert (
+        " s " not in output and "s." not in output and ".s" not in output
+    ), f"Expected no skips (s) in non-verbose output, got: {output}"
+
+    # Verify pytest correctly reports all tests passed
+    # Should show something like "XX passed" in the summary
+    assert (
+        "passed" in output
+    ), f"Expected 'passed' in test summary, got: {output}"
+
+    # Should not show failed or skipped
+    assert (
+        "failed" not in output.lower()
+    ), f"Expected no 'failed' in test summary, got: {output}"
+
+    assert (
+        "skipped" not in output.lower()
+    ), f"Expected no 'skipped' in test summary, got: {output}"

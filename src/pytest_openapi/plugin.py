@@ -128,10 +128,30 @@ def pytest_configure(config):
             )
 
 
+def pytest_report_teststatus(report, config):
+    """Customize test status reporting to show [pytest-openapi]
+    label."""
+    if report.when == "call" and hasattr(report, "nodeid"):
+        if report.nodeid.startswith(".::test_openapi["):
+            # First OpenAPI test - print label
+            if not hasattr(config, "_openapi_label_printed"):
+                config._openapi_label_printed = True
+                # Return custom status that includes the label
+                # Format: (category, letter, word)
+                if report.outcome == "passed":
+                    return "passed", "[pytest-openapi] .", "PASSED"
+                elif report.outcome == "failed":
+                    return "failed", "[pytest-openapi] F", "FAILED"
+                elif report.outcome == "skipped":
+                    return "skipped", "[pytest-openapi] s", "SKIPPED"
+    return None
+
+
 def pytest_collection_modifyitems(session, config, items):
     """Inject OpenAPI test items dynamically into the test collection.
 
-    This hook allows us to add OpenAPI tests without requiring a test file.
+    This hook allows us to add OpenAPI tests without requiring a test
+    file.
     """
     # Check if --openapi flag was provided
     base_url = config.getoption("--openapi", default=None)
@@ -145,8 +165,9 @@ def pytest_collection_modifyitems(session, config, items):
 
     import pytest
     from _pytest.python import Module
-    from .case_generator import generate_test_cases_for_schema
+
     from . import contract
+    from .case_generator import generate_test_cases_for_schema
 
     ignore_re = getattr(config, "_openapi_ignore_re", None)
     ignore_pattern = getattr(config, "_openapi_ignore_pattern", None)
@@ -196,6 +217,7 @@ def pytest_collection_modifyitems(session, config, items):
                         )
                         if not success:
                             pytest.fail(f"{m.upper()} {p}: {error}")
+
                     return test_func
 
                 test_func = make_test_func(method, path, operation)
@@ -259,14 +281,22 @@ def pytest_collection_modifyitems(session, config, items):
                             }
                             test_fn = func_map[m]
                             success, error = test_fn(
-                                base_url, p, op, rb, to,
-                                strict_examples, timeout=timeout
+                                base_url,
+                                p,
+                                op,
+                                rb,
+                                to,
+                                strict_examples,
+                                timeout=timeout,
                             )
                             if not success:
                                 pytest.fail(f"{m.upper()} {p}: {error}")
+
                         return test_func
 
-                    test_func = make_test_func(method, path, operation, req_body, origin)
+                    test_func = make_test_func(
+                        method, path, operation, req_body, origin
+                    )
                     test_func.__name__ = test_id
 
                     # Create pytest Function item
