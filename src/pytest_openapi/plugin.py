@@ -1,5 +1,8 @@
 """Pytest plugin for OpenAPI contract testing."""
 
+# Module-level variable to store config for access in hooks
+_pytest_config = None
+
 
 def pytest_addoption(parser):
     """Add --openapi CLI option."""
@@ -127,6 +130,10 @@ def pytest_configure(config):
                 f"\n✅ OpenAPI spec validated and loaded from {base_url}/openapi.json"
             )
 
+    # Store config globally for access in other hooks
+    global _pytest_config
+    _pytest_config = config
+
 
 def pytest_report_teststatus(report, config):
     """Customize test status reporting to show [pytest-openapi]
@@ -145,6 +152,75 @@ def pytest_report_teststatus(report, config):
                 elif report.outcome == "skipped":
                     return "skipped", "[pytest-openapi] s", "SKIPPED"
     return None
+
+
+def pytest_runtest_logreport(report):
+    """Print verbose details for OpenAPI tests when using -vv."""
+    if report.when == "call" and hasattr(report, "nodeid"):
+        if report.nodeid.startswith(".::test_openapi["):
+            # Access config through module-level variable
+            config = _pytest_config
+
+            if config is None:
+                return
+
+            # Only print in very verbose mode (-vv means verbose >= 2)
+            if config.option.verbose >= 2:
+                from . import contract
+
+                # Get the most recent test report from contract module
+                if contract.test_reports:
+                    test = contract.test_reports[-1]
+
+                    # Helper to truncate strings at 50 chars
+                    def truncate(s, max_len=50):
+                        if s is None:
+                            return "None"
+                        s_str = str(s)
+                        if len(s_str) > max_len:
+                            return s_str[:max_len] + "..."
+                        return s_str
+
+                    # Format request
+                    if test["request_body"] is not None:
+                        import json
+
+                        try:
+                            request_str = json.dumps(test["request_body"])
+                        except:
+                            request_str = str(test["request_body"])
+                    else:
+                        request_str = "None"
+
+                    # Format expected response
+                    try:
+                        expected_str = (
+                            json.dumps(test["expected_body"])
+                            if test["expected_body"]
+                            else "None"
+                        )
+                    except:
+                        expected_str = str(test["expected_body"])
+
+                    # Format actual response
+                    try:
+                        actual_str = (
+                            json.dumps(test["actual_body"])
+                            if test["actual_body"]
+                            else "None"
+                        )
+                    except:
+                        actual_str = str(test["actual_body"])
+
+                    # Print the three lines
+                    print(f"  Request: {truncate(request_str)}")
+                    print(
+                        f"  Expected [{test['expected_status']}]: {truncate(expected_str)}"
+                    )
+                    print(
+                        f"  Actual [{test['actual_status']}]: {truncate(actual_str)}"
+                    )
+
 
 
 def pytest_collection_modifyitems(session, config, items):

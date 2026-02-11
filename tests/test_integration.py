@@ -951,3 +951,86 @@ def test_openapi_collection_message_shows_test_origins():
     assert (
         schema_line_idx == examples_line_idx + 1
     ), f"Expected messages on consecutive lines, got examples at {examples_line_idx}, schema at {schema_line_idx}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_very_verbose_mode_shows_request_response():
+    """Test that -vv shows request, expected response, and actual response for each test."""
+    print(
+        "\n🔍 Testing OpenAPI very verbose mode (-vv)...", flush=True
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-500-error:8000",
+            "/app/test_samples/",
+            "-vv",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should have failures due to 500 error
+    assert (
+        result.returncode != 0
+    ), f"Expected tests to fail due to 500 error, got: {output}"
+
+    # Check for the three-line format for each test
+    # Should see lines like:
+    #   Request: {...}
+    #   Expected [200]: {...}
+    #   Actual [500]: {...}
+
+    assert (
+        "Request:" in output
+    ), f"Expected 'Request:' line in -vv output, got: {output}"
+
+    assert (
+        "Expected [" in output
+    ), f"Expected 'Expected [XXX]:' line in -vv output, got: {output}"
+
+    assert (
+        "Actual [" in output
+    ), f"Expected 'Actual [XXX]:' line in -vv output, got: {output}"
+
+    # Verify lines are properly formatted (each should be on its own line)
+    lines = output.split("\n")
+    request_lines = [l for l in lines if "Request:" in l]
+    expected_lines = [l for l in lines if "Expected [" in l]
+    actual_lines = [l for l in lines if "Actual [" in l]
+
+    # Should have at least one of each
+    assert (
+        len(request_lines) > 0
+    ), f"Expected at least one 'Request:' line, got: {output}"
+
+    assert (
+        len(expected_lines) > 0
+    ), f"Expected at least one 'Expected [...]' line, got: {output}"
+
+    assert (
+        len(actual_lines) > 0
+    ), f"Expected at least one 'Actual [...]' line, got: {output}"
+
+    # Verify truncation is happening (lines should not be excessively long)
+    for line in request_lines + expected_lines + actual_lines:
+        # Lines should be reasonable length (not thousands of chars)
+        # With 50 char truncation + "..." + prefix, should be under 100 chars
+        assert (
+            len(line) < 200
+        ), f"Expected line to be truncated, got line of length {len(line)}: {line}"
+
+    # Verify the three lines appear together for at least one test
+    for i, line in enumerate(lines):
+        if "Request:" in line and i + 2 < len(lines):
+            # Check if next two lines are Expected and Actual
+            if "Expected [" in lines[i + 1] and "Actual [" in lines[i + 2]:
+                # Found the three-line pattern
+                break
+    else:
+        pytest.fail(f"Expected to find Request/Expected/Actual on consecutive lines, got: {output}")
