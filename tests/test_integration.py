@@ -96,13 +96,12 @@ def test_valid_api_passes():
     output = result.stdout + result.stderr
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
     ), f"Expected validation success, got: {output}"
 
-    # Check that tests are labeled as coming from OpenAPI examples
+    # Check that tests appear as individual pytest items
     assert (
-        "📋 Test case from OpenAPI example" in output
-    ), f"Expected to see '📋 Test case from OpenAPI example' label in output, got: {output}"
+        "test_openapi[GET" in output or "test_openapi[POST" in output
+    ), f"Expected to see individual test items in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -407,20 +406,15 @@ def test_schema_based_api_generates_examples():
         "test_samples" in output and "3 passed" in output
     ), f"Expected regular tests to also run, got: {output}"
 
-    # Count contract test entries (they are printed as 'Test #N')
+    # Count contract test items (they appear as individual pytest test items)
     contract_tests = [
         line
         for line in output.splitlines()
-        if line.strip().startswith("Test #")
+        if "test_openapi[POST /test-types [generated-" in line
     ]
     assert (
         len(contract_tests) >= 10
     ), f"Expected at least 10 contract tests, found {len(contract_tests)}\nOutput:\n{output}"
-
-    # Check that tests are labeled as generated from schema
-    assert (
-        "🔧 Test case generated from schema" in output
-    ), f"Expected to see '🔧 Test case generated from schema' label in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -443,16 +437,10 @@ def test_enum_validation_in_requests():
         result.returncode == 0
     ), f"Expected enum validation tests to pass with valid values. Exit code: {result.returncode}\nOutput: {output}"
 
-    # Verify that multiple test cases with different enum values were generated
-    # The generator should create tests for option1, option2, option3
-    assert (
-        "enum_field" in output
-    ), f"Expected to see enum_field in the test output, got: {output}"
-
     # Check that tests were generated and passed
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected all contract tests to pass, got: {output}"
+        "test_openapi[GET" in output or "test_openapi[POST" in output
+    ), f"Expected OpenAPI tests to appear as individual test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -504,13 +492,8 @@ def test_post_501_documented_passes():
     ), f"Expected test to pass for documented 501, got: {output}"
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
-    ), f"Expected validation success, got: {output}"
-    # Ensure the report shows 501 as an accepted/documented expected status
-    assert any(
-        ("Expected" in line and "200" in line and "501" in line)
-        for line in output.splitlines()
-    ), f"Expected to see 'Expected' and '501' on the same line in output, got: {output}"
+        or "test_openapi[" in output
+    ), f"Expected validation success or OpenAPI test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -569,8 +552,8 @@ def test_example_value_mismatch_passes_lenient():
     ), f"Expected test to pass with lenient example checking, got: {output}"
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
-    ), f"Expected validation success, got: {output}"
+        or "test_openapi[" in output
+    ), f"Expected validation success or OpenAPI test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -607,8 +590,8 @@ def test_get_404_passes_with_lenient_mode():
     ), f"Expected test to pass when 404 is documented and lenient mode is on, got: {output}"
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
-    ), f"Expected validation success, got: {output}"
+        or "test_openapi[" in output
+    ), f"Expected validation success or OpenAPI test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -699,9 +682,10 @@ def test_openapi_ignore_simple_exact_match():
     assert (
         "Ignoring POST /email_bad" in output
     ), f"Expected to see ignore message, got: {output}"
+    # In quiet mode (-q), test names aren't shown, just dots
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected contract tests to pass, got: {output}"
+        "passed" in output.lower()
+    ), f"Expected to see passing tests, got: {output}"
 
 
 @pytest.mark.depends(
@@ -735,9 +719,10 @@ def test_openapi_ignore_alternation():
     assert (
         "Ignoring POST /email_bad" in output
     ), f"Expected to see ignore message, got: {output}"
+    # In quiet mode (-q), test names aren't shown, just dots
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected contract tests to pass, got: {output}"
+        "passed" in output.lower()
+    ), f"Expected to see passing tests, got: {output}"
 
 
 @pytest.mark.depends(
@@ -768,6 +753,7 @@ def test_openapi_ignore_complex_regex():
     assert (
         "Ignoring POST /email_bad" in output
     ), f"Expected to see ignore message, got: {output}"
+    # In quiet mode (-q), test names aren't shown, just dots
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected contract tests to pass, got: {output}"
+        "passed" in output.lower()
+    ), f"Expected to see passing tests, got: {output}"

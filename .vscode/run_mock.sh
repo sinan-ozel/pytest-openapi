@@ -2,9 +2,11 @@
 set -euo pipefail
 
 SERVICE="$1"
+shift  # Remove the first argument (service name)
+PYTEST_ARGS="$@"  # Capture all remaining arguments for pytest
 
 if [ -z "$SERVICE" ]; then
-  echo "Usage: $0 <service-name>"
+  echo "Usage: $0 <service-name> [pytest-args...]"
   exit 2
 fi
 
@@ -73,7 +75,7 @@ docker run --rm -it \
   -v "${PROJECT_ROOT}/tests:/workspace/tests" \
   -e PYTHONPATH=/workspace/src \
   pytest-openapi-test-runner \
-  pytest --openapi=http://mock-server:8000 --openapi-markdown-output=/workspace/tests/report.md /workspace/tests/test_openapi_generated.py /workspace/tests/test_samples/ -v
+  pytest --openapi=http://mock-server:8000 --openapi-markdown-output=/workspace/tests/report.md /workspace/tests/test_samples/ $PYTEST_ARGS
 
 RC=$?
 echo "=================================================="

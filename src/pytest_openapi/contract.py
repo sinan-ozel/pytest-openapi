@@ -1825,7 +1825,13 @@ def test_delete_endpoint(
 
 
 def test_post_endpoint_single(
-    base_url, path, operation, request_body, test_origin, strict_examples=True, timeout=10
+    base_url,
+    path,
+    operation,
+    request_body,
+    test_origin,
+    strict_examples=True,
+    timeout=10,
 ):
     """Test a single POST request with a specific request body.
 
@@ -1897,7 +1903,9 @@ def test_post_endpoint_single(
 
     is_negative_test = False
     if request_schema:
-        is_negative_test = contains_invalid_enum_value(request_schema, request_body)
+        is_negative_test = contains_invalid_enum_value(
+            request_schema, request_body
+        )
 
     # Make the POST request
     try:
@@ -2087,7 +2095,9 @@ def test_post_endpoint_single(
             expected_response, actual_response, strict=strict_examples
         )
     elif response_schema:
-        matches, error = validate_against_schema(response_schema, actual_response)
+        matches, error = validate_against_schema(
+            response_schema, actual_response
+        )
     else:
         matches, error = compare_responses(
             expected_response, actual_response, strict=True
@@ -2126,7 +2136,13 @@ def test_post_endpoint_single(
 
 
 def test_put_endpoint_single(
-    base_url, path, operation, request_body, test_origin, strict_examples=True, timeout=10
+    base_url,
+    path,
+    operation,
+    request_body,
+    test_origin,
+    strict_examples=True,
+    timeout=10,
 ):
     """Test a single PUT request with a specific request body.
 
@@ -2144,11 +2160,7 @@ def test_put_endpoint_single(
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
-    # For PUT endpoints with path parameters, we need to resolve them
-    # This is simplified - in production, you'd need path parameter resolution logic
-    url = f"{base_url}{path}"
-
-    # Get expected response
+    # Get expected response first to extract path parameter values
     responses = operation.get("responses", {})
     response_200 = responses.get("200", {}) or responses.get("204", {})
     content = response_200.get("content", {})
@@ -2188,6 +2200,31 @@ def test_put_endpoint_single(
             False,
             "No example found for 200 response. Examples are required.",
         )
+
+    # Resolve path parameters with values from the response example
+    url = f"{base_url}{path}"
+    if "{" in path:
+        import re
+
+        for match in re.finditer(r"\{(\w+)\}", path):
+            param_name = match.group(1)
+
+            # Try to find the value in the response example
+            value = None
+
+            if param_name in expected_response:
+                value = expected_response[param_name]
+            elif param_name.endswith("_id") and "id" in expected_response:
+                # Map item_id -> id, user_id -> id, etc.
+                value = expected_response["id"]
+            elif "id" in expected_response:
+                # Default to using the id field
+                value = expected_response["id"]
+            else:
+                # Use a default test value
+                value = 1
+
+            url = url.replace(f"{{{param_name}}}", str(value))
 
     # Make the PUT request
     try:
@@ -2316,7 +2353,9 @@ def test_put_endpoint_single(
             expected_response, actual_response, strict=strict_examples
         )
     elif response_schema:
-        matches, error = validate_against_schema(response_schema, actual_response)
+        matches, error = validate_against_schema(
+            response_schema, actual_response
+        )
     else:
         matches, error = compare_responses(
             expected_response, actual_response, strict=True

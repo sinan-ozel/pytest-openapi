@@ -188,6 +188,11 @@ This is a work in progress.
 - [ ] Ask that 400 responses be in the documentation.
 - [ ] A check for regexp and email formats.
 
+## Issues? Feedback?
+
+Seriously, this is a work-in-progress. If you try it and something does not work as intended, or expect, open a ticket!
+I may be able to fix quickly, especially if you can provide a minimal example to replicate the issue.
+
 ## In Consideration
 - [ ] Use LLM-as-a-judge to assess the error messages and check their spelling.
 

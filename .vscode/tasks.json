@@ -23,6 +23,12 @@
         "mock-server-email-server"
       ],
       "default": "mock-server-schema-based-api"
+    },
+    {
+      "id": "pytestArgs",
+      "type": "promptString",
+      "description": "Additional pytest arguments (e.g., -v, -s, -k test_name)",
+      "default": ""
     }
   ],
   "tasks": [
@@ -31,14 +37,15 @@
       "type": "shell",
       "command": "${workspaceFolder}/.vscode/run_mock.sh",
       "args": [
-        "${input:composeService}"
+        "${input:composeService}",
+        "${input:pytestArgs}"
       ],
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
         "focus": false,
-        "panel": "shared",
+        "panel": "new",
         "showReuseMessage": true,
         "clear": false
       }

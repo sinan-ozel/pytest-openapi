@@ -59,15 +59,15 @@ def test_markdown_output_to_file():
             "```json" in file_content
         ), f"Expected Markdown JSON code blocks in file, got: {file_content}"
 
-        # Stdout should still show the normal report
+        # Stdout should show individual pytest test items
         output = result.stdout + result.stderr
         assert (
-            "OpenAPI Contract Test Report" in output
-        ), f"Expected normal report in stdout, got: {output}"
+            "test_openapi[" in output
+        ), f"Expected individual test items in stdout, got: {output}"
 
-        # Should show confirmation message
+        # Should show confirmation message about markdown file
         assert (
-            f"📝 Markdown report written to: {tmp_path}" in output
+            f"📝 Full test report saved to: {tmp_path}" in output
         ), f"Expected confirmation message in output, got: {output}"
 
         # Should still pass all tests
@@ -158,15 +158,15 @@ def test_no_stdout():
 
     output = result.stdout + result.stderr
 
-    # The detailed report should NOT be present
+    # The plugin-specific messages should be suppressed with --openapi-no-stdout
     assert (
-        "OpenAPI Contract Test Report" not in output
-    ), f"Expected detailed report to be suppressed, but found it in output: {output}"
+        "📝 Full test report saved to:" not in output
+    ), f"Expected report message to be suppressed, but found it in output: {output}"
 
-    # The success message should also be suppressed
+    # But pytest output should still be present showing test results
     assert (
-        "✅ All contract tests passed!" not in output
-    ), f"Expected success message to be suppressed, got: {output}"
+        "test_openapi[" in output or "passed" in output.lower()
+    ), f"Expected pytest test output to be present, got: {output}"
 
     # Should still pass
     assert (
@@ -196,15 +196,15 @@ def test_no_stdout_with_failures():
 
     output = result.stdout + result.stderr
 
-    # The detailed report should NOT be present
+    # The plugin-specific messages should be suppressed
     assert (
-        "OpenAPI Contract Test Report" not in output
-    ), f"Expected detailed report to be suppressed, but found it in output: {output}"
+        "📝 Full test report saved to:" not in output
+    ), f"Expected report message to be suppressed, but found it in output: {output}"
 
-    # Error list should also be suppressed
+    # But pytest should still show test failures
     assert (
-        "❌ Contract tests failed:" not in output
-    ), f"Expected failure summary to be suppressed with no-stdout, got: {output}"
+        "FAILED" in output or "failed" in output.lower()
+    ), f"Expected pytest failure output to be present, got: {output}"
 
     # Should fail as expected
     assert (
@@ -241,23 +241,15 @@ def test_markdown_and_no_stdout_combined():
 
         output = result.stdout + result.stderr
 
-        # Stdout should be completely suppressed
+        # Plugin messages should be suppressed with --openapi-no-stdout
         assert (
-            "OpenAPI Contract Test Report" not in output
-        ), f"Expected no report in stdout, got: {output}"
+            "📝 Full test report saved to:" not in output
+        ), f"Expected no report message with no-stdout, got: {output}"
 
+        # But pytest output should still be present
         assert (
-            "# OpenAPI Contract Test Report" not in output
-        ), f"Expected no Markdown in stdout, got: {output}"
-
-        assert (
-            "✅ All contract tests passed!" not in output
-        ), f"Expected no success message in stdout, got: {output}"
-
-        # Should not show confirmation message either
-        assert (
-            "📝 Markdown report written to:" not in output
-        ), f"Expected no confirmation message with no-stdout, got: {output}"
+            "test session starts" in output or "passed" in output.lower()
+        ), f"Expected pytest output to be present, got: {output}"
 
         # But the file should still be created
         assert os.path.exists(
@@ -300,21 +292,20 @@ def test_default_output_unchanged():
 
     output = result.stdout + result.stderr
 
-    # Should have the standard report format (not Markdown)
+    # Should have pytest's standard output showing individual test items
     assert (
-        "=" * 80 in output or "OpenAPI Contract Test Report" in output
-    ), f"Expected standard report format in output, got: {output}"
+        "test session starts" in output
+    ), f"Expected pytest session output, got: {output}"
 
-    # Should not have Markdown headers
+    # Should show individual test items
     assert (
-        "# OpenAPI Contract Test Report" not in output
-    ), f"Expected no Markdown formatting in default output, got: {output}"
+        "test_openapi[" in output
+    ), f"Expected individual test items in output, got: {output}"
 
-    # Should show success message
+    # Should show validation success
     assert (
-        "✅ All contract tests passed!" in output
-        or "✅ OpenAPI spec validated successfully" in output
-    ), f"Expected success message in default output, got: {output}"
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected validation message in default output, got: {output}"
 
     # Should pass
     assert (
