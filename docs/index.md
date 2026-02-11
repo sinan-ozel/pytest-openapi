@@ -47,6 +47,22 @@ The markdown report includes:
 
 The markdown report is written independently of stdout output.
 
+### Verbose Output Options
+
+Control the level of detail in test output:
+
+- **Default**: Shows dots (`.`) for passed tests, `F` for failures. OpenAPI tests are marked with `[pytest-openapi]` label.
+- **`-v`**: Shows full test names for each test
+- **`-vv`**: Shows request, expected response, and actual response (truncated to 50 characters)
+- **`-vvv`**: Shows full request and response without truncation
+
+Example:
+```bash
+pytest --openapi=http://localhost:8000 -vv
+```
+
+See [Output Formats](reports/output.md) for detailed examples.
+
 ### `--openapi-ignore=REGEXP`
 Completely ignore endpoints whose path matches the provided regular expression. Use this to skip known-broken, auth-protected, or otherwise irrelevant endpoints during contract testing.
 

@@ -189,8 +189,11 @@ def pytest_runtest_logreport(report):
                         import json
 
                         try:
-                            request_str = json.dumps(test["request_body"], indent=2 if not use_truncate else None)
-                        except:
+                            request_str = json.dumps(
+                                test["request_body"],
+                                indent=2 if not use_truncate else None,
+                            )
+                        except (TypeError, ValueError):
                             request_str = str(test["request_body"])
                     else:
                         request_str = "None"
@@ -198,21 +201,27 @@ def pytest_runtest_logreport(report):
                     # Format expected response
                     try:
                         expected_str = (
-                            json.dumps(test["expected_body"], indent=2 if not use_truncate else None)
+                            json.dumps(
+                                test["expected_body"],
+                                indent=2 if not use_truncate else None,
+                            )
                             if test["expected_body"]
                             else "None"
                         )
-                    except:
+                    except (TypeError, ValueError):
                         expected_str = str(test["expected_body"])
 
                     # Format actual response
                     try:
                         actual_str = (
-                            json.dumps(test["actual_body"], indent=2 if not use_truncate else None)
+                            json.dumps(
+                                test["actual_body"],
+                                indent=2 if not use_truncate else None,
+                            )
                             if test["actual_body"]
                             else "None"
                         )
-                    except:
+                    except (TypeError, ValueError):
                         actual_str = str(test["actual_body"])
 
                     # Print the three lines
@@ -223,7 +232,6 @@ def pytest_runtest_logreport(report):
                     print(
                         f"  Actual [{test['actual_status']}]: {truncate(actual_str)}"
                     )
-
 
 
 def pytest_collection_modifyitems(session, config, items):
