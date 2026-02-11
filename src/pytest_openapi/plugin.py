@@ -311,6 +311,23 @@ def pytest_collection_modifyitems(session, config, items):
     # Add all OpenAPI test items to the collection
     items.extend(test_items)
 
+    # Store the count for reporting after collection
+    config._openapi_test_count = len(test_items)
+
+
+def pytest_collection_finish(session):
+    """Print message about OpenAPI tests after collection."""
+    config = session.config
+
+    # Only print if we added OpenAPI tests
+    if hasattr(config, "_openapi_test_count"):
+        count = config._openapi_test_count
+        no_stdout = getattr(config, "_openapi_no_stdout", False)
+
+        if count > 0 and not no_stdout:
+            item_word = "item" if count == 1 else "items"
+            print(f"created {count} {item_word} based on openapi schema")
+
 
 def pytest_unconfigure(config):
     """Clean up when pytest unconfigures.
