@@ -345,3 +345,220 @@ def test_pytest_depends_compatibility():
     assert (
         "pytest_unconfigure" not in output or result.returncode == 0
     ), f"Expected no pytest_unconfigure errors, got: {output}"
+
+
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
+def test_markdown_file_created_with_correct_name():
+    """Test that markdown file is created with the exact filename specified."""
+    print("\n🔍 Testing markdown file creation with correct name...", flush=True)
+    time.sleep(0.5)
+
+    custom_filename = "my_custom_report.md"
+    tmp_dir = tempfile.mkdtemp()
+    tmp_path = os.path.join(tmp_dir, custom_filename)
+
+    try:
+        result = subprocess.run(
+            [
+                "pytest",
+                "--openapi=http://mock-server-valid-api:8000",
+                f"--openapi-markdown-output={tmp_path}",
+                "-v",
+            ],
+            capture_output=True,
+            text=True,
+            cwd="/app",
+        )
+
+        # Check that the file was created with exact name
+        assert os.path.exists(
+            tmp_path
+        ), f"Expected markdown file to be created at {tmp_path}"
+
+        # Check that the filename is correct
+        assert os.path.basename(tmp_path) == custom_filename, (
+            f"Expected filename to be {custom_filename}, "
+            f"got {os.path.basename(tmp_path)}"
+        )
+
+        # Verify the path in the output message
+        output = result.stdout + result.stderr
+        assert (
+            tmp_path in output
+        ), f"Expected exact path {tmp_path} in output, got: {output}"
+
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        if os.path.exists(tmp_dir):
+            os.rmdir(tmp_dir)
+
+
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
+def test_markdown_counts_match_actual_tests():
+    """Test that markdown summary counts match the actual test execution counts."""
+    print(
+        "\n🔍 Testing markdown counts match actual tests...", flush=True
+    )
+    time.sleep(0.5)
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".md", delete=False
+    ) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        result = subprocess.run(
+            [
+                "pytest",
+                "--openapi=http://mock-server-valid-api:8000",
+                f"--openapi-markdown-output={tmp_path}",
+                "--ignore=/app/test_samples",  # Only run OpenAPI tests
+                "-v",
+            ],
+            capture_output=True,
+            text=True,
+            cwd="/app",
+        )
+
+        output = result.stdout + result.stderr
+
+        # Read the markdown file
+        with open(tmp_path, "r") as f:
+            file_content = f.read()
+
+        # Extract counts from pytest output
+        # Look for pattern like "24 passed in X.XXs"
+        import re
+        pytest_match = re.search(r"(\d+) passed", output)
+        assert pytest_match, f"Could not find passed count in output: {output}"
+        pytest_passed = int(pytest_match.group(1))
+
+        # Extract counts from markdown summary
+        # Look for "- **Passed:** ✅ 24"
+        md_passed_match = re.search(r"\*\*Passed:\*\* ✅ (\d+)", file_content)
+        assert md_passed_match, (
+            f"Could not find passed count in markdown: {file_content}"
+        )
+        md_passed = int(md_passed_match.group(1))
+
+        # Extract total from markdown
+        md_total_match = re.search(r"\*\*Total Tests:\*\* (\d+)", file_content)
+        assert md_total_match, (
+            f"Could not find total count in markdown: {file_content}"
+        )
+        md_total = int(md_total_match.group(1))
+
+        # Verify counts match
+        assert pytest_passed == md_passed, (
+            f"Passed count mismatch: pytest shows {pytest_passed}, "
+            f"markdown shows {md_passed}"
+        )
+
+        # Verify total equals passed (since all should pass)
+        assert md_total == md_passed, (
+            f"Total {md_total} should equal passed {md_passed} "
+            f"when all tests pass"
+        )
+
+        # Verify failed count is 0
+        md_failed_match = re.search(r"\*\*Failed:\*\* ❌ (\d+)", file_content)
+        assert md_failed_match, (
+            f"Could not find failed count in markdown: {file_content}"
+        )
+        md_failed = int(md_failed_match.group(1))
+        assert md_failed == 0, f"Expected 0 failed tests, got {md_failed}"
+
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@pytest.mark.depends(
+    on=["test_integration.py::test_openapi_flag_is_recognized"]
+)
+def test_markdown_counts_with_failures():
+    """Test that markdown summary correctly counts passed and failed tests."""
+    print(
+        "\n🔍 Testing markdown counts with failures...", flush=True
+    )
+    time.sleep(0.5)
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".md", delete=False
+    ) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        result = subprocess.run(
+            [
+                "pytest",
+                "--openapi=http://mock-server-get-missing-key:8000",
+                f"--openapi-markdown-output={tmp_path}",
+                "--ignore=/app/test_samples",  # Only run OpenAPI tests
+                "-v",
+            ],
+            capture_output=True,
+            text=True,
+            cwd="/app",
+        )
+
+        output = result.stdout + result.stderr
+
+        # Read the markdown file
+        with open(tmp_path, "r") as f:
+            file_content = f.read()
+
+        # Extract counts from pytest output
+        import re
+        pytest_passed_match = re.search(r"(\d+) passed", output)
+        pytest_failed_match = re.search(r"(\d+) failed", output)
+
+        assert pytest_passed_match or pytest_failed_match, (
+            f"Could not find test counts in output: {output}"
+        )
+
+        pytest_passed = int(pytest_passed_match.group(1)) if pytest_passed_match else 0
+        pytest_failed = int(pytest_failed_match.group(1)) if pytest_failed_match else 0
+        pytest_total = pytest_passed + pytest_failed
+
+        # Extract counts from markdown
+        md_total_match = re.search(r"\*\*Total Tests:\*\* (\d+)", file_content)
+        md_passed_match = re.search(r"\*\*Passed:\*\* ✅ (\d+)", file_content)
+        md_failed_match = re.search(r"\*\*Failed:\*\* ❌ (\d+)", file_content)
+
+        assert md_total_match, f"Could not find total in markdown: {file_content}"
+        assert md_passed_match, f"Could not find passed in markdown: {file_content}"
+        assert md_failed_match, f"Could not find failed in markdown: {file_content}"
+
+        md_total = int(md_total_match.group(1))
+        md_passed = int(md_passed_match.group(1))
+        md_failed = int(md_failed_match.group(1))
+
+        # Verify counts match
+        assert pytest_total == md_total, (
+            f"Total count mismatch: pytest shows {pytest_total}, "
+            f"markdown shows {md_total}"
+        )
+        assert pytest_passed == md_passed, (
+            f"Passed count mismatch: pytest shows {pytest_passed}, "
+            f"markdown shows {md_passed}"
+        )
+        assert pytest_failed == md_failed, (
+            f"Failed count mismatch: pytest shows {pytest_failed}, "
+            f"markdown shows {md_failed}"
+        )
+
+        # Verify total = passed + failed
+        assert md_total == md_passed + md_failed, (
+            f"Total {md_total} should equal passed {md_passed} + "
+            f"failed {md_failed} = {md_passed + md_failed}"
+        )
+
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)

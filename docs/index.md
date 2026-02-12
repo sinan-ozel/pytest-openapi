@@ -32,7 +32,7 @@ See [Validation Modes](how-it-works/validation-modes.md) for details.
 
 ### `--openapi-markdown-output=FILENAME`
 Write test results in Markdown format to the specified file.
-By default, this is written to the file `report.md` in the current folder.
+**This is optional** - if not specified, no markdown file is written.
 
 **Usage**:
 ```bash

@@ -156,7 +156,7 @@ pytest --openapi=http://localhost:8000
 
 - `--openapi=BASE_URL`: Run contract tests against the API at the specified base URL
 - `--openapi-no-strict-example-checking`: Use lenient validation for example-based tests
-- `--openapi-markdown-output=FILENAME`: Write test results in Markdown format to the specified file (Default: `report.md`)
+- `--openapi-markdown-output=FILENAME`: (Optional) Write test results in Markdown format to the specified file
 - `--openapi-ignore=REGEXP`: Completely ignore endpoints whose path matches the given regular expression. Useful to skip known-broken or auth-protected paths.
 - `-v`: Verbose mode - shows full test names
 - `-vv`: Very verbose mode - shows request/response with 50 character truncation
@@ -192,11 +192,13 @@ pytest --openapi=http://localhost:8000 --openapi-no-strict-example-checking
 
 #### Markdown Output Format
 
-You can generate test reports in Markdown format and save them to a file:
+You can optionally generate test reports in Markdown format and save them to a file:
 
 ```bash
 pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md
 ```
+
+**Note**: If you don't specify `--openapi-markdown-output`, no markdown file is written. The plugin only outputs to pytest's standard output.
 
 This creates a `report.md` file with:
 - Summary statistics (total, passed, failed tests)
