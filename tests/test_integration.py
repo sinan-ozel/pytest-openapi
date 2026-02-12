@@ -762,9 +762,7 @@ def test_openapi_ignore_complex_regex():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_openapi_tests_show_dots_in_non_verbose_mode():
     """Test that OpenAPI tests show [pytest-openapi] label and dots/F in non-verbose mode output."""
-    print(
-        "\n🔍 Testing OpenAPI test output in non-verbose mode...", flush=True
-    )
+    print("\n🔍 Testing OpenAPI test output in non-verbose mode...", flush=True)
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -822,7 +820,8 @@ def test_openapi_tests_show_dots_in_non_verbose_mode():
 def test_openapi_tests_all_pass_in_non_verbose_mode():
     """Test that all OpenAPI tests pass and show [pytest-openapi] label in non-verbose mode."""
     print(
-        "\n🔍 Testing all OpenAPI tests passing in non-verbose mode...", flush=True
+        "\n🔍 Testing all OpenAPI tests passing in non-verbose mode...",
+        flush=True,
     )
     time.sleep(0.5)
 
@@ -840,9 +839,7 @@ def test_openapi_tests_all_pass_in_non_verbose_mode():
     output = result.stdout + result.stderr
 
     # Should pass - all tests should succeed
-    assert (
-        result.returncode == 0
-    ), f"Expected all tests to pass, got: {output}"
+    assert result.returncode == 0, f"Expected all tests to pass, got: {output}"
 
     # Check for the [pytest-openapi] label
     assert (
@@ -882,9 +879,7 @@ def test_openapi_tests_all_pass_in_non_verbose_mode():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_openapi_collection_message_shows_test_origins():
     """Test that collection message shows breakdown of example vs generated tests."""
-    print(
-        "\n🔍 Testing OpenAPI collection message format...", flush=True
-    )
+    print("\n🔍 Testing OpenAPI collection message format...", flush=True)
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -956,9 +951,7 @@ def test_openapi_collection_message_shows_test_origins():
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_openapi_very_verbose_mode_shows_request_response():
     """Test that -vv shows request, expected response, and actual response for each test."""
-    print(
-        "\n🔍 Testing OpenAPI very verbose mode (-vv)...", flush=True
-    )
+    print("\n🔍 Testing OpenAPI very verbose mode (-vv)...", flush=True)
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -1033,15 +1026,15 @@ def test_openapi_very_verbose_mode_shows_request_response():
                 # Found the three-line pattern
                 break
     else:
-        pytest.fail(f"Expected to find Request/Expected/Actual on consecutive lines, got: {output}")
+        pytest.fail(
+            f"Expected to find Request/Expected/Actual on consecutive lines, got: {output}"
+        )
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_openapi_very_very_verbose_mode_shows_full_content():
     """Test that -vvv shows full request/response without truncation."""
-    print(
-        "\n🔍 Testing OpenAPI very very verbose mode (-vvv)...", flush=True
-    )
+    print("\n🔍 Testing OpenAPI very very verbose mode (-vvv)...", flush=True)
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -1095,6 +1088,6 @@ def test_openapi_very_very_verbose_mode_shows_full_content():
         if "None" not in line:  # Skip lines that just say "None"
             # If the line has JSON content, it should not have the truncation marker at the end
             if "{" in line or "[" in line:
-                assert (
-                    not line.rstrip().endswith("...")
+                assert not line.rstrip().endswith(
+                    "..."
                 ), f"Expected no truncation in -vvv mode, but found '...' in: {line}"

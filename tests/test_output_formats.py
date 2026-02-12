@@ -352,7 +352,9 @@ def test_pytest_depends_compatibility():
 )
 def test_markdown_file_created_with_correct_name():
     """Test that markdown file is created with the exact filename specified."""
-    print("\n🔍 Testing markdown file creation with correct name...", flush=True)
+    print(
+        "\n🔍 Testing markdown file creation with correct name...", flush=True
+    )
     time.sleep(0.5)
 
     custom_filename = "my_custom_report.md"
@@ -401,9 +403,7 @@ def test_markdown_file_created_with_correct_name():
 )
 def test_markdown_counts_match_actual_tests():
     """Test that markdown summary counts match the actual test execution counts."""
-    print(
-        "\n🔍 Testing markdown counts match actual tests...", flush=True
-    )
+    print("\n🔍 Testing markdown counts match actual tests...", flush=True)
     time.sleep(0.5)
 
     with tempfile.NamedTemporaryFile(
@@ -434,6 +434,7 @@ def test_markdown_counts_match_actual_tests():
         # Extract counts from pytest output
         # Look for pattern like "24 passed in X.XXs"
         import re
+
         pytest_match = re.search(r"(\d+) passed", output)
         assert pytest_match, f"Could not find passed count in output: {output}"
         pytest_passed = int(pytest_match.group(1))
@@ -441,16 +442,16 @@ def test_markdown_counts_match_actual_tests():
         # Extract counts from markdown summary
         # Look for "- **Passed:** ✅ 24"
         md_passed_match = re.search(r"\*\*Passed:\*\* ✅ (\d+)", file_content)
-        assert md_passed_match, (
-            f"Could not find passed count in markdown: {file_content}"
-        )
+        assert (
+            md_passed_match
+        ), f"Could not find passed count in markdown: {file_content}"
         md_passed = int(md_passed_match.group(1))
 
         # Extract total from markdown
         md_total_match = re.search(r"\*\*Total Tests:\*\* (\d+)", file_content)
-        assert md_total_match, (
-            f"Could not find total count in markdown: {file_content}"
-        )
+        assert (
+            md_total_match
+        ), f"Could not find total count in markdown: {file_content}"
         md_total = int(md_total_match.group(1))
 
         # Verify counts match
@@ -467,9 +468,9 @@ def test_markdown_counts_match_actual_tests():
 
         # Verify failed count is 0
         md_failed_match = re.search(r"\*\*Failed:\*\* ❌ (\d+)", file_content)
-        assert md_failed_match, (
-            f"Could not find failed count in markdown: {file_content}"
-        )
+        assert (
+            md_failed_match
+        ), f"Could not find failed count in markdown: {file_content}"
         md_failed = int(md_failed_match.group(1))
         assert md_failed == 0, f"Expected 0 failed tests, got {md_failed}"
 
@@ -483,9 +484,7 @@ def test_markdown_counts_match_actual_tests():
 )
 def test_markdown_counts_with_failures():
     """Test that markdown summary correctly counts passed and failed tests."""
-    print(
-        "\n🔍 Testing markdown counts with failures...", flush=True
-    )
+    print("\n🔍 Testing markdown counts with failures...", flush=True)
     time.sleep(0.5)
 
     with tempfile.NamedTemporaryFile(
@@ -515,15 +514,20 @@ def test_markdown_counts_with_failures():
 
         # Extract counts from pytest output
         import re
+
         pytest_passed_match = re.search(r"(\d+) passed", output)
         pytest_failed_match = re.search(r"(\d+) failed", output)
 
-        assert pytest_passed_match or pytest_failed_match, (
-            f"Could not find test counts in output: {output}"
-        )
+        assert (
+            pytest_passed_match or pytest_failed_match
+        ), f"Could not find test counts in output: {output}"
 
-        pytest_passed = int(pytest_passed_match.group(1)) if pytest_passed_match else 0
-        pytest_failed = int(pytest_failed_match.group(1)) if pytest_failed_match else 0
+        pytest_passed = (
+            int(pytest_passed_match.group(1)) if pytest_passed_match else 0
+        )
+        pytest_failed = (
+            int(pytest_failed_match.group(1)) if pytest_failed_match else 0
+        )
         pytest_total = pytest_passed + pytest_failed
 
         # Extract counts from markdown
@@ -531,9 +535,15 @@ def test_markdown_counts_with_failures():
         md_passed_match = re.search(r"\*\*Passed:\*\* ✅ (\d+)", file_content)
         md_failed_match = re.search(r"\*\*Failed:\*\* ❌ (\d+)", file_content)
 
-        assert md_total_match, f"Could not find total in markdown: {file_content}"
-        assert md_passed_match, f"Could not find passed in markdown: {file_content}"
-        assert md_failed_match, f"Could not find failed in markdown: {file_content}"
+        assert (
+            md_total_match
+        ), f"Could not find total in markdown: {file_content}"
+        assert (
+            md_passed_match
+        ), f"Could not find passed in markdown: {file_content}"
+        assert (
+            md_failed_match
+        ), f"Could not find failed in markdown: {file_content}"
 
         md_total = int(md_total_match.group(1))
         md_passed = int(md_passed_match.group(1))
