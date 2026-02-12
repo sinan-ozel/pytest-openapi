@@ -1822,3 +1822,572 @@ def test_delete_endpoint(
         documented_statuses=documented_statuses,
     )
     return True, None
+
+
+def test_post_endpoint_single(
+    base_url,
+    path,
+    operation,
+    request_body,
+    test_origin,
+    strict_examples=True,
+    timeout=10,
+):
+    """Test a single POST request with a specific request body.
+
+    This function tests one request body at a time, suitable for parametrized pytest tests.
+
+    Args:
+        base_url: Base URL of the API server
+        path: API endpoint path
+        operation: OpenAPI operation object
+        request_body: The specific request body to test
+        test_origin: 'example' or 'generated'
+        strict_examples: If True, strictly match example responses; if False, only validate structure
+        timeout: Request timeout in seconds
+
+    Returns:
+        tuple: (success: bool, error_message: str or None)
+    """
+    url = f"{base_url}{path}"
+
+    # Get expected response
+    responses = operation.get("responses", {})
+    response_200 = responses.get("200", {}) or responses.get("201", {})
+    content = response_200.get("content", {})
+
+    expected_response = None
+    response_schema = None
+    response_is_example_based = False
+    expected_status = 201 if "201" in responses else 200
+
+    # Get all documented response status codes
+    documented_statuses = set()
+    for status_code in responses.keys():
+        try:
+            documented_statuses.add(int(status_code))
+        except (ValueError, TypeError):
+            pass
+
+    for media_type, media_obj in content.items():
+        if "example" in media_obj:
+            expected_response = media_obj["example"]
+            response_is_example_based = True
+            if "schema" in media_obj:
+                response_schema = media_obj["schema"]
+            break
+        elif "examples" in media_obj:
+            examples_dict = media_obj["examples"]
+            if examples_dict:
+                first_example = next(iter(examples_dict.values()))
+                expected_response = first_example.get("value")
+                response_is_example_based = True
+                if "schema" in media_obj:
+                    response_schema = media_obj["schema"]
+                break
+
+    if expected_response is None:
+        return (
+            False,
+            "No example found for 200/201 response. Examples are required.",
+        )
+
+    # Check if this is a negative test (invalid enum value)
+    request_body_def = operation.get("requestBody", {})
+    request_content = request_body_def.get("content", {})
+    request_schema = None
+    for media_type, media_obj in request_content.items():
+        if "schema" in media_obj:
+            request_schema = media_obj["schema"]
+            break
+
+    is_negative_test = False
+    if request_schema:
+        is_negative_test = contains_invalid_enum_value(
+            request_schema, request_body
+        )
+
+    # Make the POST request
+    try:
+        response = make_request("POST", url, json=request_body, timeout=timeout)
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Request failed: {e}"
+        log_test_result(
+            "POST",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            None,
+            None,
+            False,
+            error_msg,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return False, error_msg
+
+    # Handle negative tests
+    if is_negative_test:
+        try:
+            if response.text:
+                actual_response = response.json()
+            else:
+                actual_response = ""
+        except Exception:
+            actual_response = response.text
+
+        if response.status_code == 400:
+            log_test_result(
+                "POST",
+                path,
+                request_body,
+                400,
+                "400 Bad Request (invalid enum value)",
+                response.status_code,
+                actual_response,
+                True,
+                None,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return True, None
+        elif response.status_code >= 500:
+            error_msg = f"Expected 400 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400, not 5xx."
+            log_test_result(
+                "POST",
+                path,
+                request_body,
+                400,
+                "400 Bad Request (invalid enum value)",
+                response.status_code,
+                actual_response,
+                False,
+                error_msg,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return False, error_msg
+        else:
+            error_msg = (
+                f"Expected 400 for invalid enum value, got {response.status_code}. "
+                f"Server should validate enum values and return 400 Bad Request."
+            )
+            log_test_result(
+                "POST",
+                path,
+                request_body,
+                400,
+                "400 Bad Request (invalid enum value)",
+                response.status_code,
+                actual_response,
+                False,
+                error_msg,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return False, error_msg
+
+    # Check status code
+    actual_response = (
+        response.json() if response.status_code in [200, 201] else response.text
+    )
+
+    # In lenient mode, accept any documented status code
+    if not strict_examples and response.status_code in documented_statuses:
+        actual_status_response = responses.get(str(response.status_code), {})
+        actual_content = actual_status_response.get("content", {})
+        actual_expected_response = None
+        actual_response_schema = None
+
+        for media_type, media_obj in actual_content.items():
+            if "example" in media_obj:
+                actual_expected_response = media_obj["example"]
+            if "schema" in media_obj:
+                actual_response_schema = media_obj["schema"]
+            break
+
+        try:
+            if response.text:
+                actual_response = response.json()
+        except Exception:
+            pass
+
+        if actual_response_schema:
+            matches, error = validate_against_schema(
+                actual_response_schema, actual_response
+            )
+        elif actual_expected_response:
+            matches, error = compare_responses(
+                actual_expected_response, actual_response, strict=False
+            )
+        else:
+            matches, error = True, None
+
+        if matches:
+            log_test_result(
+                "POST",
+                path,
+                request_body,
+                expected_status,
+                expected_response,
+                response.status_code,
+                actual_response,
+                True,
+                None,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return True, None
+        else:
+            log_test_result(
+                "POST",
+                path,
+                request_body,
+                expected_status,
+                expected_response,
+                response.status_code,
+                actual_response,
+                False,
+                error,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return False, error
+
+    # Accept 501 if documented
+    if response.status_code == 501 and 501 in documented_statuses:
+        log_test_result(
+            "POST",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            True,
+            None,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return True, None
+
+    if response.status_code not in [200, 201]:
+        error_msg = f"Expected status 200/201, got {response.status_code}. Response: {response.text}"
+        log_test_result(
+            "POST",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error_msg,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return False, error_msg
+
+    # Validate response
+    if test_origin == "example" and response_is_example_based:
+        matches, error = compare_responses(
+            expected_response, actual_response, strict=strict_examples
+        )
+    elif response_schema:
+        matches, error = validate_against_schema(
+            response_schema, actual_response
+        )
+    else:
+        matches, error = compare_responses(
+            expected_response, actual_response, strict=True
+        )
+
+    if not matches:
+        log_test_result(
+            "POST",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return False, error
+
+    log_test_result(
+        "POST",
+        path,
+        request_body,
+        expected_status,
+        expected_response,
+        response.status_code,
+        actual_response,
+        True,
+        None,
+        test_origin,
+        documented_statuses=documented_statuses,
+    )
+    return True, None
+
+
+def test_put_endpoint_single(
+    base_url,
+    path,
+    operation,
+    request_body,
+    test_origin,
+    strict_examples=True,
+    timeout=10,
+):
+    """Test a single PUT request with a specific request body.
+
+    This function tests one request body at a time, suitable for parametrized pytest tests.
+
+    Args:
+        base_url: Base URL of the API server
+        path: API endpoint path (may contain path parameters)
+        operation: OpenAPI operation object
+        request_body: The specific request body to test
+        test_origin: 'example' or 'generated'
+        strict_examples: If True, strictly match example responses; if False, only validate structure
+        timeout: Request timeout in seconds
+
+    Returns:
+        tuple: (success: bool, error_message: str or None)
+    """
+    # Get expected response first to extract path parameter values
+    responses = operation.get("responses", {})
+    response_200 = responses.get("200", {}) or responses.get("204", {})
+    content = response_200.get("content", {})
+
+    expected_response = None
+    response_schema = None
+    response_is_example_based = False
+    expected_status = 200
+
+    # Get all documented response status codes
+    documented_statuses = set()
+    for status_code in responses.keys():
+        try:
+            documented_statuses.add(int(status_code))
+        except (ValueError, TypeError):
+            pass
+
+    for media_type, media_obj in content.items():
+        if "example" in media_obj:
+            expected_response = media_obj["example"]
+            response_is_example_based = True
+            if "schema" in media_obj:
+                response_schema = media_obj["schema"]
+            break
+        elif "examples" in media_obj:
+            examples_dict = media_obj["examples"]
+            if examples_dict:
+                first_example = next(iter(examples_dict.values()))
+                expected_response = first_example.get("value")
+                response_is_example_based = True
+                if "schema" in media_obj:
+                    response_schema = media_obj["schema"]
+                break
+
+    if expected_response is None:
+        return (
+            False,
+            "No example found for 200 response. Examples are required.",
+        )
+
+    # Resolve path parameters with values from the response example
+    url = f"{base_url}{path}"
+    if "{" in path:
+        import re
+
+        for match in re.finditer(r"\{(\w+)\}", path):
+            param_name = match.group(1)
+
+            # Try to find the value in the response example
+            value = None
+
+            if param_name in expected_response:
+                value = expected_response[param_name]
+            elif param_name.endswith("_id") and "id" in expected_response:
+                # Map item_id -> id, user_id -> id, etc.
+                value = expected_response["id"]
+            elif "id" in expected_response:
+                # Default to using the id field
+                value = expected_response["id"]
+            else:
+                # Use a default test value
+                value = 1
+
+            url = url.replace(f"{{{param_name}}}", str(value))
+
+    # Make the PUT request
+    try:
+        response = make_request("PUT", url, json=request_body, timeout=timeout)
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Request failed: {e}"
+        log_test_result(
+            "PUT",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            None,
+            None,
+            False,
+            error_msg,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return False, error_msg
+
+    # Check status code
+    actual_response = (
+        response.json() if response.status_code == 200 else response.text
+    )
+
+    # In lenient mode, accept any documented status code
+    if not strict_examples and response.status_code in documented_statuses:
+        actual_status_response = responses.get(str(response.status_code), {})
+        actual_content = actual_status_response.get("content", {})
+        actual_expected_response = None
+        actual_response_schema = None
+
+        for media_type, media_obj in actual_content.items():
+            if "example" in media_obj:
+                actual_expected_response = media_obj["example"]
+            if "schema" in media_obj:
+                actual_response_schema = media_obj["schema"]
+            break
+
+        try:
+            if response.text:
+                actual_response = response.json()
+        except Exception:
+            pass
+
+        if actual_response_schema:
+            matches, error = validate_against_schema(
+                actual_response_schema, actual_response
+            )
+        elif actual_expected_response:
+            matches, error = compare_responses(
+                actual_expected_response, actual_response, strict=False
+            )
+        else:
+            matches, error = True, None
+
+        if matches:
+            log_test_result(
+                "PUT",
+                path,
+                request_body,
+                expected_status,
+                expected_response,
+                response.status_code,
+                actual_response,
+                True,
+                None,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return True, None
+        else:
+            log_test_result(
+                "PUT",
+                path,
+                request_body,
+                expected_status,
+                expected_response,
+                response.status_code,
+                actual_response,
+                False,
+                error,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return False, error
+
+    # Accept 501 if documented
+    if response.status_code == 501 and 501 in documented_statuses:
+        log_test_result(
+            "PUT",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            True,
+            None,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return True, None
+
+    if response.status_code != 200:
+        error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
+        log_test_result(
+            "PUT",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error_msg,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return False, error_msg
+
+    # Validate response
+    if test_origin == "example" and response_is_example_based:
+        matches, error = compare_responses(
+            expected_response, actual_response, strict=strict_examples
+        )
+    elif response_schema:
+        matches, error = validate_against_schema(
+            response_schema, actual_response
+        )
+    else:
+        matches, error = compare_responses(
+            expected_response, actual_response, strict=True
+        )
+
+    if not matches:
+        log_test_result(
+            "PUT",
+            path,
+            request_body,
+            expected_status,
+            expected_response,
+            response.status_code,
+            actual_response,
+            False,
+            error,
+            test_origin,
+            documented_statuses=documented_statuses,
+        )
+        return False, error
+
+    log_test_result(
+        "PUT",
+        path,
+        request_body,
+        expected_status,
+        expected_response,
+        response.status_code,
+        actual_response,
+        True,
+        None,
+        test_origin,
+        documented_statuses=documented_statuses,
+    )
+    return True, None

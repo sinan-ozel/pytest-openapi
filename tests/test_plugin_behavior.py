@@ -40,10 +40,10 @@ def test_openapi_plugin_runs_alongside_regular_tests():
         "✅ OpenAPI spec validated successfully" in output
     ), f"Expected OpenAPI validation success, got: {output}"
 
-    # Check for contract tests passing
+    # Check that OpenAPI contract tests were collected as individual items
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected contract tests to pass, got: {output}"
+        "test_openapi[GET" in output or "test_openapi[POST" in output
+    ), f"Expected OpenAPI tests to appear as individual test items, got: {output}"
 
     # Check that regular tests were collected and ran
     assert (

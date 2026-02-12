@@ -27,40 +27,106 @@ This "certifies" that the documentation is complete with descriptions, example, 
 ![Swagger POST endpoint /email](swagger-screenshot-1.png)
 
 ```bash
-pytest --openapi=http://localhost:8000
+pytest --openapi=http://localhost:8000 -v
 ```
 
+**Console Output:**
 ```
-Test #10 ✅
-POST /email
-Requested:
-  {
-    "body": "Lorem ipsum dolor sit amet",
-    "from": "Lorem ipsum dolor sit amet",
-    "subject": "Lorem ipsum dolor sit amet",
-    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
-  }
+====================================================================================== test session starts =======================================================================================
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+rootdir: /workspace
+plugins: openapi-0.2.1, depends-1.0.1, mock-3.15.1
+collected 3 items
+created 2 items from openapi examples
+created 20 items generated from schema
 
-Expected 201
-  {
-    "body": "Hi Bob, how are you?",
-    "from": "alice@example.com",
-    "id": 1,
-    "subject": "Hello",
-    "to": "bob@example.com"
-  }
+tests/test_samples/test_sample_math.py::test_sample_addition PASSED                                                                                                                        [  4%]
+tests/test_samples/test_sample_math.py::test_sample_multiplication PASSED                                                                                                                  [  8%]
+.::test_openapi[POST /email [example-1]] PASSED                                                                                                                                            [ 12%]
+.::test_openapi[POST /email [generated-2]] PASSED                                                                                                                                          [ 16%]
+.::test_openapi[POST /email [generated-3]] PASSED                                                                                                                                          [ 20%]
+.::test_openapi[POST /email [generated-4]] PASSED                                                                                                                                          [ 24%]
+.::test_openapi[POST /email [generated-5]] PASSED                                                                                                                                          [ 28%]
+.::test_openapi[POST /email [generated-6]] PASSED                                                                                                                                          [ 32%]
+.::test_openapi[POST /email [generated-7]] PASSED                                                                                                                                          [ 36%]
+.::test_openapi[POST /email [generated-8]] PASSED                                                                                                                                          [ 40%]
+.::test_openapi[POST /email [generated-9]] PASSED                                                                                                                                          [ 44%]
+.::test_openapi[POST /email [generated-10]] PASSED                                                                                                                                         [ 48%]
+.::test_openapi[POST /email [generated-11]] PASSED                                                                                                                                         [ 52%]
+.::test_openapi[POST /email_bad [example-1]] FAILED                                                                                                                                        [ 56%]
+.::test_openapi[POST /email_bad [generated-2]] FAILED                                                                                                                                      [ 60%]
+.::test_openapi[POST /email_bad [generated-3]] FAILED                                                                                                                                      [ 64%]
+.::test_openapi[POST /email_bad [generated-4]] FAILED                                                                                                                                      [ 68%]
+.::test_openapi[POST /email_bad [generated-5]] FAILED                                                                                                                                      [ 72%]
+.::test_openapi[POST /email_bad [generated-6]] FAILED                                                                                                                                      [ 76%]
+.::test_openapi[POST /email_bad [generated-7]] FAILED                                                                                                                                      [ 80%]
+.::test_openapi[POST /email_bad [generated-8]] FAILED                                                                                                                                      [ 84%]
+.::test_openapi[POST /email_bad [generated-9]] FAILED                                                                                                                                      [ 88%]
+.::test_openapi[POST /email_bad [generated-10]] FAILED                                                                                                                                     [ 92%]
+.::test_openapi[POST /email_bad [generated-11]] FAILED                                                                                                                                     [ 96%]
+tests/test_samples/test_sample_math.py::test_sample_string_operations PASSED                                                                                                               [100%]
+📝 Full test report saved to: /workspace/tests/report.md
+   (Configure output file with: --openapi-markdown-output=<filename>)
 
-Actual 201
-  {
-    "body": "Lorem ipsum dolor sit amet",
-    "from": "Lorem ipsum dolor sit amet",
-    "id": 10,
-    "subject": "Lorem ipsum dolor sit amet",
-    "to": "Test!@#$%^&*()_+-=[]{}|;:<>?,./`~"
-  }
+
+============================================================================================ FAILURES ============================================================================================
+```
+
+**Detailed Report** (`report.md`):
+## Test #12 ❌
+
+📋 *Test case from OpenAPI example*
+
+**Endpoint:** `POST /email_bad`
+
+### Request Body
+
+```json
+{
+  "body": "Hi Bob, how are you?",
+  "from": "alice@example.com",
+  "subject": "Hello",
+  "to": "bob@example.com"
+}
+```
+
+### Expected Response
+
+**Status:** `201`
+
+```json
+{
+  "body": "Hi Bob, how are you?",
+  "from": "alice@example.com",
+  "id": 1,
+  "subject": "Hello",
+  "to": "bob@example.com"
+}
+```
+
+### Actual Response
+
+**Status:** `201`
+
+```json
+{
+  "body": "Hi Bob, how are you?",
+  "from": "alice@example.com",
+  "id": 12,
+  "subject": 12345,
+  "to": "bob@example.com"
+}
+```
+
+### ❌ Error
 
 ```
-Generates multiple QA tests.
+Type mismatch for key 'subject': expected str, got int. Expected value: Hello, Actual value: 12345
+```
+
+
+Each OpenAPI test appears as an individual pytest test item.
 
 ✔️ Validates OpenAPI request/response definitions
 ✔️ Enforces schema field descriptions
@@ -90,9 +156,11 @@ pytest --openapi=http://localhost:8000
 
 - `--openapi=BASE_URL`: Run contract tests against the API at the specified base URL
 - `--openapi-no-strict-example-checking`: Use lenient validation for example-based tests
-- `--openapi-markdown-output=FILENAME`: Write test results in Markdown format to the specified file
-- `--openapi-no-stdout`: Suppress all output to stdout
+- `--openapi-markdown-output=FILENAME`: (Optional) Write test results in Markdown format to the specified file
 - `--openapi-ignore=REGEXP`: Completely ignore endpoints whose path matches the given regular expression. Useful to skip known-broken or auth-protected paths.
+- `-v`: Verbose mode - shows full test names
+- `-vv`: Very verbose mode - shows request/response with 50 character truncation
+- `-vvv`: Very very verbose mode - shows full request/response without truncation
 
 Examples:
 
@@ -100,6 +168,8 @@ Examples:
 pytest --openapi=http://localhost:8000 --openapi-ignore=mcp
 pytest --openapi=http://localhost:8000 --openapi-ignore=(auth|mcp)
 pytest --openapi=http://localhost:8000 --openapi-ignore=(v[0-9]+/auth|mcp)
+pytest --openapi=http://localhost:8000 -vv  # Show truncated request/response
+pytest --openapi=http://localhost:8000 -vvv  # Show full request/response
 ```
 
 #### Strict vs Lenient Example Checking
@@ -122,11 +192,13 @@ pytest --openapi=http://localhost:8000 --openapi-no-strict-example-checking
 
 #### Markdown Output Format
 
-You can generate test reports in Markdown format and save them to a file:
+You can optionally generate test reports in Markdown format and save them to a file:
 
 ```bash
 pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md
 ```
+
+**Note**: If you don't specify `--openapi-markdown-output`, no markdown file is written. The plugin only outputs to pytest's standard output.
 
 This creates a `report.md` file with:
 - Summary statistics (total, passed, failed tests)
@@ -137,24 +209,6 @@ This creates a `report.md` file with:
 The markdown report is written independently of stdout output.
 
 **Example output**: See [example_report.md](example_report.md) for a sample markdown report.
-
-#### Suppress Stdout
-
-For CI/CD pipelines where you want completely silent operation or only care about the exit code:
-
-```bash
-pytest --openapi=http://localhost:8000 --openapi-no-stdout
-```
-
-This will:
-- Suppress all output to stdout
-- Still return appropriate exit codes (0 for success, 1 for failure)
-- Can be combined with `--openapi-markdown-output` to only generate a file
-
-You can combine flags for silent operation with file output:
-```bash
-pytest --openapi=http://localhost:8000 --openapi-markdown-output=report.md --openapi-no-stdout
-```
 
 ## Server
 See here an example server - `email-server`: [tests/test_servers/email_server/server.py](tests/test_servers/email_server/server.py)
@@ -169,6 +223,11 @@ This is a work in progress.
 - [ ] A check that the example matches the schema
 - [ ] Ask that 400 responses be in the documentation.
 - [ ] A check for regexp and email formats.
+
+## Issues? Feedback?
+
+Seriously, this is a work-in-progress. If you try it and something does not work as intended, or expect, open a ticket!
+I may be able to fix quickly, especially if you can provide a minimal example to replicate the issue.
 
 ## In Consideration
 - [ ] Use LLM-as-a-judge to assess the error messages and check their spelling.

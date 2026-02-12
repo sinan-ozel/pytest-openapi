@@ -32,6 +32,7 @@ See [Validation Modes](how-it-works/validation-modes.md) for details.
 
 ### `--openapi-markdown-output=FILENAME`
 Write test results in Markdown format to the specified file.
+**This is optional** - if not specified, no markdown file is written.
 
 **Usage**:
 ```bash
@@ -46,13 +47,21 @@ The markdown report includes:
 
 The markdown report is written independently of stdout output.
 
-### `--openapi-no-stdout`
-Suppress all output to stdout. Useful for CI/CD pipelines where you only need the exit code or want to generate a file output without console output.
+### Verbose Output Options
 
-**Usage**:
+Control the level of detail in test output:
+
+- **Default**: Shows dots (`.`) for passed tests, `F` for failures. OpenAPI tests are marked with `[pytest-openapi]` label.
+- **`-v`**: Shows full test names for each test
+- **`-vv`**: Shows request, expected response, and actual response (truncated to 50 characters)
+- **`-vvv`**: Shows full request and response without truncation
+
+Example:
 ```bash
-pytest --openapi=http://localhost:8000 --openapi-no-stdout
+pytest --openapi=http://localhost:8000 -vv
 ```
+
+See [Output Formats](reports/output.md) for detailed examples.
 
 ### `--openapi-ignore=REGEXP`
 Completely ignore endpoints whose path matches the provided regular expression. Use this to skip known-broken, auth-protected, or otherwise irrelevant endpoints during contract testing.

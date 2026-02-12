@@ -1,5 +1,8 @@
 """Pytest plugin for OpenAPI contract testing."""
 
+# Module-level variable to store config for access in hooks
+_pytest_config = None
+
 
 def pytest_addoption(parser):
     """Add --openapi CLI option."""
@@ -46,35 +49,30 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    """Configure pytest with OpenAPI marker."""
+    """Configure pytest with OpenAPI marker and validate spec."""
     config.addinivalue_line(
         "markers",
         "openapi: OpenAPI contract tests",
     )
 
-    # If --openapi flag is provided, validate and test the OpenAPI spec
+    # If --openapi flag is provided, validate and store the OpenAPI spec
     base_url = config.getoption("--openapi")
-    strict_examples = not config.getoption(
-        "--openapi-no-strict-example-checking"
-    )
-    markdown_output_file = config.getoption("--openapi-markdown-output")
-    no_stdout = config.getoption("--openapi-no-stdout")
-    ignore_pattern = config.getoption("--openapi-ignore")
-
-    openapi_timeout = float(config.getoption("--openapi-timeout"))
 
     if base_url:
+        import re
+
         import pytest
         import requests
 
-        from .contract import (
-            get_test_report,
-            test_delete_endpoint,
-            test_get_endpoint,
-            test_post_endpoint,
-            test_put_endpoint,
-        )
         from .openapi import validate_openapi_spec
+
+        strict_examples = not config.getoption(
+            "--openapi-no-strict-example-checking"
+        )
+        markdown_output_file = config.getoption("--openapi-markdown-output")
+        no_stdout = config.getoption("--openapi-no-stdout")
+        ignore_pattern = config.getoption("--openapi-ignore")
+        openapi_timeout = float(config.getoption("--openapi-timeout"))
 
         # Run validation checks
         validate_openapi_spec(base_url, timeout=openapi_timeout)
@@ -95,22 +93,13 @@ def pytest_configure(config):
                 f"{base_url}/reset", timeout=openapi_timeout
             )
             if reset_response.status_code == 200:
-                print(f"🔄 Server state reset via {base_url}/reset")
+                if not no_stdout:
+                    print(f"🔄 Server state reset via {base_url}/reset")
         except Exception:
             # Server doesn't have /reset endpoint or it failed - that's OK
             pass
 
-        # Run contract tests on all endpoints
-        # Execute tests grouped by HTTP method to avoid state pollution:
-        # 1. GET (read initial state)
-        # 2. POST (create new resources)
-        # 3. PUT (update resources)
-        # 4. DELETE (remove resources)
-        paths = spec.get("paths", {})
-        errors = []
-
-        import re
-
+        # Compile ignore pattern if provided
         ignore_re = None
         if ignore_pattern:
             try:
@@ -121,100 +110,337 @@ def pytest_configure(config):
                     returncode=2,
                 )
 
-        for method in ["get", "post", "put", "delete"]:
-            for path, path_item in paths.items():
-                if method not in path_item:
-                    continue
+        # Store configuration on the config object for use during test generation and execution
+        config._openapi_base_url = base_url
+        config._openapi_spec = spec
+        config._openapi_strict_examples = strict_examples
+        config._openapi_timeout = openapi_timeout
+        config._openapi_markdown_output = markdown_output_file
+        config._openapi_no_stdout = no_stdout
+        config._openapi_ignore_re = ignore_re
+        config._openapi_ignore_pattern = ignore_pattern
 
-                # If the path matches the ignore pattern, skip testing it entirely
-                if ignore_re and ignore_re.search(path):
-                    if not no_stdout:
-                        print(
-                            f"🔕 Ignoring {method.upper()} {path} due to --openapi-ignore={ignore_pattern}"
+        if not no_stdout:
+            print(
+                f"\n✅ OpenAPI spec validated and loaded from {base_url}/openapi.json"
+            )
+
+        if not no_stdout:
+            print(
+                f"\n✅ OpenAPI spec validated and loaded from {base_url}/openapi.json"
+            )
+
+    # Store config globally for access in other hooks
+    global _pytest_config
+    _pytest_config = config
+
+
+def pytest_report_teststatus(report, config):
+    """Customize test status reporting to show [pytest-openapi]
+    label."""
+    if report.when == "call" and hasattr(report, "nodeid"):
+        if report.nodeid.startswith(".::test_openapi["):
+            # First OpenAPI test - print label
+            if not hasattr(config, "_openapi_label_printed"):
+                config._openapi_label_printed = True
+                # Return custom status that includes the label
+                # Format: (category, letter, word)
+                if report.outcome == "passed":
+                    return "passed", "[pytest-openapi] .", "PASSED"
+                elif report.outcome == "failed":
+                    return "failed", "[pytest-openapi] F", "FAILED"
+                elif report.outcome == "skipped":
+                    return "skipped", "[pytest-openapi] s", "SKIPPED"
+    return None
+
+
+def pytest_runtest_logreport(report):
+    """Print verbose details for OpenAPI tests when using -vv."""
+    if report.when == "call" and hasattr(report, "nodeid"):
+        if report.nodeid.startswith(".::test_openapi["):
+            # Access config through module-level variable
+            config = _pytest_config
+
+            if config is None:
+                return
+
+            # Only print in very verbose mode (-vv means verbose >= 2)
+            if config.option.verbose >= 2:
+                from . import contract
+
+                # Get the most recent test report from contract module
+                if contract.test_reports:
+                    test = contract.test_reports[-1]
+
+                    # Check if we should truncate (vv) or show full (vvv+)
+                    use_truncate = config.option.verbose == 2
+
+                    # Helper to truncate strings at 50 chars
+                    def truncate(s, max_len=50):
+                        if s is None:
+                            return "None"
+                        s_str = str(s)
+                        if use_truncate and len(s_str) > max_len:
+                            return s_str[:max_len] + "..."
+                        return s_str
+
+                    # Format request
+                    if test["request_body"] is not None:
+                        import json
+
+                        try:
+                            request_str = json.dumps(
+                                test["request_body"],
+                                indent=2 if not use_truncate else None,
+                            )
+                        except (TypeError, ValueError):
+                            request_str = str(test["request_body"])
+                    else:
+                        request_str = "None"
+
+                    # Format expected response
+                    try:
+                        expected_str = (
+                            json.dumps(
+                                test["expected_body"],
+                                indent=2 if not use_truncate else None,
+                            )
+                            if test["expected_body"]
+                            else "None"
                         )
-                    continue
+                    except (TypeError, ValueError):
+                        expected_str = str(test["expected_body"])
 
-                operation = path_item[method]
+                    # Format actual response
+                    try:
+                        actual_str = (
+                            json.dumps(
+                                test["actual_body"],
+                                indent=2 if not use_truncate else None,
+                            )
+                            if test["actual_body"]
+                            else "None"
+                        )
+                    except (TypeError, ValueError):
+                        actual_str = str(test["actual_body"])
 
-                # Select appropriate test function
-                if method == "get":
-                    success, error = test_get_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
+                    # Print the three lines
+                    print(f"  Request: {truncate(request_str)}")
+                    print(
+                        f"  Expected [{test['expected_status']}]: {truncate(expected_str)}"
                     )
-                elif method == "post":
-                    success, error = test_post_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
-                    )
-                elif method == "put":
-                    success, error = test_put_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
-                    )
-                elif method == "delete":
-                    success, error = test_delete_endpoint(
-                        base_url,
-                        path,
-                        operation,
-                        strict_examples,
-                        timeout=openapi_timeout,
+                    print(
+                        f"  Actual [{test['actual_status']}]: {truncate(actual_str)}"
                     )
 
-                if not success:
-                    errors.append(f"  {method.upper()} {path}: {error}")
 
-        # Generate and save/display report
-        # Write markdown report to file if requested
-        if markdown_output_file:
-            from .contract import get_test_report_markdown
+def pytest_collection_modifyitems(session, config, items):
+    """Inject OpenAPI test items dynamically into the test collection.
 
-            try:
-                with open(markdown_output_file, "w", encoding="utf-8") as f:
-                    f.write(get_test_report_markdown())
+    This hook allows us to add OpenAPI tests without requiring a test
+    file.
+    """
+    # Check if --openapi flag was provided
+    base_url = config.getoption("--openapi", default=None)
+    if not base_url:
+        return
+
+    # Get stored configuration
+    spec = getattr(config, "_openapi_spec", None)
+    if not spec:
+        return
+
+    import pytest
+    from _pytest.python import Module
+
+    from . import contract
+    from .case_generator import generate_test_cases_for_schema
+
+    ignore_re = getattr(config, "_openapi_ignore_re", None)
+    ignore_pattern = getattr(config, "_openapi_ignore_pattern", None)
+    no_stdout = getattr(config, "_openapi_no_stdout", False)
+    strict_examples = getattr(config, "_openapi_strict_examples", True)
+    timeout = getattr(config, "_openapi_timeout", 10)
+
+    # Create a virtual module to be parent of all OpenAPI test items
+    # Use the session as parent
+    module = Module.from_parent(session, path=session.path)
+    module._openapi_virtual_module = True
+
+    # Collect all test cases from the OpenAPI spec
+    test_items = []
+    paths = spec.get("paths", {})
+
+    # Track counts for reporting
+    example_count = 0
+    generated_count = 0
+
+    # Execute tests in order: GET -> POST -> PUT -> DELETE
+    for method in ["get", "post", "put", "delete"]:
+        for path, path_item in paths.items():
+            if method not in path_item:
+                continue
+
+            # Check if path should be ignored
+            if ignore_re and ignore_re.search(path):
                 if not no_stdout:
                     print(
-                        f"\n📝 Markdown report written to: {markdown_output_file}"
+                        f"🔕 Ignoring {method.upper()} {path} due to --openapi-ignore={ignore_pattern}"
                     )
-            except Exception as e:
-                print(f"\n⚠️  Warning: Failed to write markdown report: {e}")
+                continue
 
-        # Display report to stdout unless suppressed
-        if not no_stdout:
-            print("\n")
-            print(get_test_report())
+            operation = path_item[method]
 
-        # Report results and exit
-        if errors:
-            # Always prepare a combined error message so pytest can include
-            # it in its exit output even if stdout capture hides prints.
-            combined_errors = "\n" + "\n".join(errors)
+            # For GET and DELETE: typically no request body, one test per endpoint
+            if method in ["get", "delete"]:
+                test_id = f"test_openapi[{method.upper()} {path}]"
 
-            if not no_stdout:
-                # Print to stdout and flush immediately to minimize risk of
-                # output being lost when pytest exits.
-                print("\n❌ Contract tests failed:", flush=True)
-                for error in errors:
-                    print(error, flush=True)
+                # Create test function for this endpoint
+                def make_test_func(m, p, op):
+                    def test_func():
+                        func_map = {
+                            "get": contract.test_get_endpoint,
+                            "delete": contract.test_delete_endpoint,
+                        }
+                        test_fn = func_map[m]
+                        success, error = test_fn(
+                            base_url, p, op, strict_examples, timeout=timeout
+                        )
+                        if not success:
+                            pytest.fail(f"{m.upper()} {p}: {error}")
 
-            # Include the errors in the pytest.exit message so the failure
-            # details appear in pytest's own exit reporting.
-            pytest.exit(
-                f"Contract tests failed:{combined_errors}", returncode=1
-            )
-        else:
-            if not no_stdout:
-                print("\n✅ All contract tests passed!")
-            # Don't call sys.exit(0) - let pytest finish normally
+                    return test_func
+
+                test_func = make_test_func(method, path, operation)
+                test_func.__name__ = test_id
+
+                # Create pytest Function item
+                item = pytest.Function.from_parent(
+                    module,
+                    name=test_id,
+                    callobj=test_func,
+                )
+                item.add_marker(pytest.mark.openapi)
+                test_items.append(item)
+                example_count += 1  # GET/DELETE tests are based on examples
+
+            # For POST and PUT: generate test cases from examples and schemas
+            elif method in ["post", "put"]:
+                request_body_def = operation.get("requestBody", {})
+                request_content = request_body_def.get("content", {})
+
+                request_test_cases = []
+                test_origins = []
+
+                for media_type, media_obj in request_content.items():
+                    # Collect explicit examples
+                    if "example" in media_obj:
+                        request_test_cases.append(media_obj["example"])
+                        test_origins.append("example")
+                    if "examples" in media_obj:
+                        examples_dict = media_obj["examples"]
+                        for ex_name, ex_obj in examples_dict.items():
+                            if "value" in ex_obj:
+                                request_test_cases.append(ex_obj["value"])
+                                test_origins.append("example")
+
+                    # Generate test cases from schema
+                    if "schema" in media_obj:
+                        schema = media_obj["schema"]
+                        generated, _ = generate_test_cases_for_schema(
+                            schema, "request_body"
+                        )
+                        for gen_case in generated:
+                            request_test_cases.append(gen_case)
+                            test_origins.append("generated")
+                    break
+
+                # Create a test item for each request body variant
+                for i, (req_body, origin) in enumerate(
+                    zip(request_test_cases, test_origins)
+                ):
+                    origin_marker = (
+                        "example" if origin == "example" else "generated"
+                    )
+                    test_id = f"test_openapi[{method.upper()} {path} [{origin_marker}-{i+1}]]"
+
+                    # Create test function for this specific request
+                    def make_test_func(m, p, op, rb, to):
+                        def test_func():
+                            func_map = {
+                                "post": contract.test_post_endpoint_single,
+                                "put": contract.test_put_endpoint_single,
+                            }
+                            test_fn = func_map[m]
+                            success, error = test_fn(
+                                base_url,
+                                p,
+                                op,
+                                rb,
+                                to,
+                                strict_examples,
+                                timeout=timeout,
+                            )
+                            if not success:
+                                pytest.fail(f"{m.upper()} {p}: {error}")
+
+                        return test_func
+
+                    test_func = make_test_func(
+                        method, path, operation, req_body, origin
+                    )
+                    test_func.__name__ = test_id
+
+                    # Create pytest Function item
+                    item = pytest.Function.from_parent(
+                        module,
+                        name=test_id,
+                        callobj=test_func,
+                    )
+                    item.add_marker(pytest.mark.openapi)
+                    test_items.append(item)
+
+                    # Track origin
+                    if origin == "example":
+                        example_count += 1
+                    else:
+                        generated_count += 1
+
+    # Add all OpenAPI test items to the collection
+    items.extend(test_items)
+
+    # Store the counts for reporting after collection
+    config._openapi_example_count = example_count
+    config._openapi_generated_count = generated_count
+
+
+def pytest_collection_finish(session):
+    """Print message about OpenAPI tests after collection."""
+
+    config = session.config
+
+    # Only print if we added OpenAPI tests
+    if hasattr(config, "_openapi_example_count"):
+        example_count = config._openapi_example_count
+        generated_count = config._openapi_generated_count
+        total_count = example_count + generated_count
+        no_stdout = getattr(config, "_openapi_no_stdout", False)
+
+        if total_count > 0 and not no_stdout:
+            if example_count > 0:
+                example_word = "item" if example_count == 1 else "items"
+                print(
+                    f"created {example_count} {example_word} from openapi examples"
+                )
+            if generated_count > 0:
+                generated_word = "item" if generated_count == 1 else "items"
+                print(
+                    f"created {generated_count} {generated_word} generated from schema"
+                )
+
+
+# Use hookimpl with trylast to ensure this runs after terminal reporter
+pytest_collection_finish.trylast = True
 
 
 def pytest_unconfigure(config):
@@ -228,3 +454,33 @@ def pytest_unconfigure(config):
     # No specific cleanup needed for pytest-openapi,
     # but defining this hook prevents the IndexError in pytest-depends
     pass
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Generate and save reports after all tests complete."""
+    config = session.config
+
+    # Only generate reports if --openapi was used
+    if not hasattr(config, "_openapi_base_url"):
+        return
+
+    markdown_output_file = getattr(config, "_openapi_markdown_output", None)
+    no_stdout = getattr(config, "_openapi_no_stdout", False)
+
+    from .contract import get_test_report_markdown
+
+    # Write markdown report to file if requested
+    if markdown_output_file:
+        try:
+            with open(markdown_output_file, "w", encoding="utf-8") as f:
+                f.write(get_test_report_markdown())
+            if not no_stdout:
+                print(f"\n📝 Full test report saved to: {markdown_output_file}")
+                print(
+                    "   (Configure output file with: --openapi-markdown-output=<filename>)"
+                )
+        except Exception as e:
+            print(f"\n⚠️  Warning: Failed to write markdown report: {e}")
+
+    # Don't display the full report to stdout anymore since tests appear as individual pytest items
+    # Users can see test results in pytest's normal output

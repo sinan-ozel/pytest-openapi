@@ -8,7 +8,7 @@ pytest --openapi=http://localhost:8000 \
   --openapi-markdown-output=report.md \
   --openapi-no-stdout \
   --openapi-timeout=60 \
-  -v
+  -vv
 ```
 
 - `--openapi`: OpenAPI base URL to test against.
@@ -16,6 +16,9 @@ pytest --openapi=http://localhost:8000 \
 - `--openapi-markdown-output=FILENAME`: path for a markdown report.
 - `--openapi-no-stdout`: disable plugin stdout output (useful in CI).
 - `--openapi-timeout`: request timeout in seconds.
+- `-v`: verbose mode (shows full test names)
+- `-vv`: very verbose mode (shows truncated request/response, 50 chars)
+- `-vvv`: very very verbose mode (shows full request/response without truncation)
 
 You can also use the included helper script in `scripts/` to run the same command.
 

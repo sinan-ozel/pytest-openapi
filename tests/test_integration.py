@@ -96,13 +96,12 @@ def test_valid_api_passes():
     output = result.stdout + result.stderr
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
     ), f"Expected validation success, got: {output}"
 
-    # Check that tests are labeled as coming from OpenAPI examples
+    # Check that tests appear as individual pytest items
     assert (
-        "📋 Test case from OpenAPI example" in output
-    ), f"Expected to see '📋 Test case from OpenAPI example' label in output, got: {output}"
+        "test_openapi[GET" in output or "test_openapi[POST" in output
+    ), f"Expected to see individual test items in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -407,20 +406,15 @@ def test_schema_based_api_generates_examples():
         "test_samples" in output and "3 passed" in output
     ), f"Expected regular tests to also run, got: {output}"
 
-    # Count contract test entries (they are printed as 'Test #N')
+    # Count contract test items (they appear as individual pytest test items)
     contract_tests = [
         line
         for line in output.splitlines()
-        if line.strip().startswith("Test #")
+        if "test_openapi[POST /test-types [generated-" in line
     ]
     assert (
         len(contract_tests) >= 10
     ), f"Expected at least 10 contract tests, found {len(contract_tests)}\nOutput:\n{output}"
-
-    # Check that tests are labeled as generated from schema
-    assert (
-        "🔧 Test case generated from schema" in output
-    ), f"Expected to see '🔧 Test case generated from schema' label in output, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -443,16 +437,10 @@ def test_enum_validation_in_requests():
         result.returncode == 0
     ), f"Expected enum validation tests to pass with valid values. Exit code: {result.returncode}\nOutput: {output}"
 
-    # Verify that multiple test cases with different enum values were generated
-    # The generator should create tests for option1, option2, option3
-    assert (
-        "enum_field" in output
-    ), f"Expected to see enum_field in the test output, got: {output}"
-
     # Check that tests were generated and passed
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected all contract tests to pass, got: {output}"
+        "test_openapi[GET" in output or "test_openapi[POST" in output
+    ), f"Expected OpenAPI tests to appear as individual test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -504,13 +492,8 @@ def test_post_501_documented_passes():
     ), f"Expected test to pass for documented 501, got: {output}"
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
-    ), f"Expected validation success, got: {output}"
-    # Ensure the report shows 501 as an accepted/documented expected status
-    assert any(
-        ("Expected" in line and "200" in line and "501" in line)
-        for line in output.splitlines()
-    ), f"Expected to see 'Expected' and '501' on the same line in output, got: {output}"
+        or "test_openapi[" in output
+    ), f"Expected validation success or OpenAPI test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -569,8 +552,8 @@ def test_example_value_mismatch_passes_lenient():
     ), f"Expected test to pass with lenient example checking, got: {output}"
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
-    ), f"Expected validation success, got: {output}"
+        or "test_openapi[" in output
+    ), f"Expected validation success or OpenAPI test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -607,8 +590,8 @@ def test_get_404_passes_with_lenient_mode():
     ), f"Expected test to pass when 404 is documented and lenient mode is on, got: {output}"
     assert (
         "✅ OpenAPI spec validated successfully" in output
-        or "✅ All contract tests passed!" in output
-    ), f"Expected validation success, got: {output}"
+        or "test_openapi[" in output
+    ), f"Expected validation success or OpenAPI test items, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
@@ -699,9 +682,10 @@ def test_openapi_ignore_simple_exact_match():
     assert (
         "Ignoring POST /email_bad" in output
     ), f"Expected to see ignore message, got: {output}"
+    # In quiet mode (-q), test names aren't shown, just dots
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected contract tests to pass, got: {output}"
+        "passed" in output.lower()
+    ), f"Expected to see passing tests, got: {output}"
 
 
 @pytest.mark.depends(
@@ -735,9 +719,10 @@ def test_openapi_ignore_alternation():
     assert (
         "Ignoring POST /email_bad" in output
     ), f"Expected to see ignore message, got: {output}"
+    # In quiet mode (-q), test names aren't shown, just dots
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected contract tests to pass, got: {output}"
+        "passed" in output.lower()
+    ), f"Expected to see passing tests, got: {output}"
 
 
 @pytest.mark.depends(
@@ -768,6 +753,341 @@ def test_openapi_ignore_complex_regex():
     assert (
         "Ignoring POST /email_bad" in output
     ), f"Expected to see ignore message, got: {output}"
+    # In quiet mode (-q), test names aren't shown, just dots
     assert (
-        "✅ All contract tests passed!" in output
-    ), f"Expected contract tests to pass, got: {output}"
+        "passed" in output.lower()
+    ), f"Expected to see passing tests, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_tests_show_dots_in_non_verbose_mode():
+    """Test that OpenAPI tests show [pytest-openapi] label and dots/F in non-verbose mode output."""
+    print("\n🔍 Testing OpenAPI test output in non-verbose mode...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-put-response-missing-key:8000",
+            "/app/test_samples/",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should fail because the PUT endpoint is missing the 'updated' key
+    assert (
+        result.returncode != 0
+    ), f"Expected tests to fail due to missing key, got: {output}"
+
+    # Check for the [pytest-openapi] label
+    assert (
+        "[pytest-openapi]" in output
+    ), f"Expected to see '[pytest-openapi]' label in output, got: {output}"
+
+    # Check that dots and F appear in the output (non-verbose mode)
+    # Should see something like: "tests/test_samples/test_sample_math.py .."
+    # Then: "\n[pytest-openapi] . F.........."
+    assert (
+        output.count(".") > 5
+    ), f"Expected to see dots in non-verbose output, got: {output}"
+
+    assert (
+        " F " in output or "F." in output or ".F" in output
+    ), f"Expected to see F (failure) in non-verbose output, got: {output}"
+
+    # Verify the failure message contains the expected error
+    assert (
+        "Missing key" in output or "missing key" in output.lower()
+    ), f"Expected error about missing key, got: {output}"
+
+    # Verify pytest correctly reports the number of failures
+    # Should show something like "12 passed, 1 failed" in the summary
+    assert (
+        "1 failed" in output
+    ), f"Expected '1 failed' in test summary, got: {output}"
+
+    # Should also show some passed tests
+    assert (
+        "passed" in output
+    ), f"Expected some passed tests in summary, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_tests_all_pass_in_non_verbose_mode():
+    """Test that all OpenAPI tests pass and show [pytest-openapi] label in non-verbose mode."""
+    print(
+        "\n🔍 Testing all OpenAPI tests passing in non-verbose mode...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-schema-based-api:8000",
+            "/app/test_samples/",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should pass - all tests should succeed
+    assert result.returncode == 0, f"Expected all tests to pass, got: {output}"
+
+    # Check for the [pytest-openapi] label
+    assert (
+        "[pytest-openapi]" in output
+    ), f"Expected to see '[pytest-openapi]' label in output, got: {output}"
+
+    # Check that dots appear in the output (non-verbose mode)
+    assert (
+        output.count(".") > 5
+    ), f"Expected to see dots in non-verbose output, got: {output}"
+
+    # Should not have any failures or skips
+    assert (
+        " F " not in output and "F." not in output and ".F" not in output
+    ), f"Expected no failures (F) in non-verbose output, got: {output}"
+
+    assert (
+        " s " not in output and "s." not in output and ".s" not in output
+    ), f"Expected no skips (s) in non-verbose output, got: {output}"
+
+    # Verify pytest correctly reports all tests passed
+    # Should show something like "XX passed" in the summary
+    assert (
+        "passed" in output
+    ), f"Expected 'passed' in test summary, got: {output}"
+
+    # Should not show failed or skipped
+    assert (
+        "failed" not in output.lower()
+    ), f"Expected no 'failed' in test summary, got: {output}"
+
+    assert (
+        "skipped" not in output.lower()
+    ), f"Expected no 'skipped' in test summary, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_collection_message_shows_test_origins():
+    """Test that collection message shows breakdown of example vs generated tests."""
+    print("\n🔍 Testing OpenAPI collection message format...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-put-response-missing-key:8000",
+            "/app/test_samples/",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Check that the messages appear on separate lines with exact wording
+    # The message should say "created X item(s) from openapi examples"
+    assert (
+        "from openapi examples" in output
+    ), f"Expected 'from openapi examples' message, got: {output}"
+
+    # The message should say "created X item(s) generated from schema"
+    assert (
+        "generated from schema" in output
+    ), f"Expected 'generated from schema' message, got: {output}"
+
+    # Verify the messages appear after "collected" line
+    lines = output.split("\n")
+    collected_line_idx = None
+    examples_line_idx = None
+    schema_line_idx = None
+
+    for i, line in enumerate(lines):
+        if "collected" in line and "items" in line:
+            collected_line_idx = i
+        if "from openapi examples" in line:
+            examples_line_idx = i
+        if "generated from schema" in line:
+            schema_line_idx = i
+
+    assert (
+        collected_line_idx is not None
+    ), f"Expected to find 'collected X items' line, got: {output}"
+
+    assert (
+        examples_line_idx is not None
+    ), f"Expected to find 'from openapi examples' line, got: {output}"
+
+    assert (
+        schema_line_idx is not None
+    ), f"Expected to find 'generated from schema' line, got: {output}"
+
+    # Verify messages appear AFTER collected line
+    assert (
+        examples_line_idx > collected_line_idx
+    ), f"Expected 'from openapi examples' after 'collected', got: {output}"
+
+    assert (
+        schema_line_idx > collected_line_idx
+    ), f"Expected 'generated from schema' after 'collected', got: {output}"
+
+    # Verify the two messages are on separate consecutive lines
+    assert (
+        schema_line_idx == examples_line_idx + 1
+    ), f"Expected messages on consecutive lines, got examples at {examples_line_idx}, schema at {schema_line_idx}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_very_verbose_mode_shows_request_response():
+    """Test that -vv shows request, expected response, and actual response for each test."""
+    print("\n🔍 Testing OpenAPI very verbose mode (-vv)...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-500-error:8000",
+            "/app/test_samples/",
+            "-vv",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should have failures due to 500 error
+    assert (
+        result.returncode != 0
+    ), f"Expected tests to fail due to 500 error, got: {output}"
+
+    # Check for the three-line format for each test
+    # Should see lines like:
+    #   Request: {...}
+    #   Expected [200]: {...}
+    #   Actual [500]: {...}
+
+    assert (
+        "Request:" in output
+    ), f"Expected 'Request:' line in -vv output, got: {output}"
+
+    assert (
+        "Expected [" in output
+    ), f"Expected 'Expected [XXX]:' line in -vv output, got: {output}"
+
+    assert (
+        "Actual [" in output
+    ), f"Expected 'Actual [XXX]:' line in -vv output, got: {output}"
+
+    # Verify lines are properly formatted (each should be on its own line)
+    lines = output.split("\n")
+    request_lines = [l for l in lines if "Request:" in l]
+    expected_lines = [l for l in lines if "Expected [" in l]
+    actual_lines = [l for l in lines if "Actual [" in l]
+
+    # Should have at least one of each
+    assert (
+        len(request_lines) > 0
+    ), f"Expected at least one 'Request:' line, got: {output}"
+
+    assert (
+        len(expected_lines) > 0
+    ), f"Expected at least one 'Expected [...]' line, got: {output}"
+
+    assert (
+        len(actual_lines) > 0
+    ), f"Expected at least one 'Actual [...]' line, got: {output}"
+
+    # Verify truncation is happening (lines should not be excessively long)
+    for line in request_lines + expected_lines + actual_lines:
+        # Lines should be reasonable length (not thousands of chars)
+        # With 50 char truncation + "..." + prefix, should be under 100 chars
+        assert (
+            len(line) < 200
+        ), f"Expected line to be truncated, got line of length {len(line)}: {line}"
+
+    # Verify the three lines appear together for at least one test
+    for i, line in enumerate(lines):
+        if "Request:" in line and i + 2 < len(lines):
+            # Check if next two lines are Expected and Actual
+            if "Expected [" in lines[i + 1] and "Actual [" in lines[i + 2]:
+                # Found the three-line pattern
+                break
+    else:
+        pytest.fail(
+            f"Expected to find Request/Expected/Actual on consecutive lines, got: {output}"
+        )
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi_very_very_verbose_mode_shows_full_content():
+    """Test that -vvv shows full request/response without truncation."""
+    print("\n🔍 Testing OpenAPI very very verbose mode (-vvv)...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-500-error:8000",
+            "/app/test_samples/",
+            "-vvv",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should have failures due to 500 error
+    assert (
+        result.returncode != 0
+    ), f"Expected tests to fail due to 500 error, got: {output}"
+
+    # Check for the three-line format
+    assert (
+        "Request:" in output
+    ), f"Expected 'Request:' line in -vvv output, got: {output}"
+
+    assert (
+        "Expected [" in output
+    ), f"Expected 'Expected [XXX]:' line in -vvv output, got: {output}"
+
+    assert (
+        "Actual [" in output
+    ), f"Expected 'Actual [XXX]:' line in -vvv output, got: {output}"
+
+    # Verify NO truncation is happening (should NOT see "..." in the output)
+    lines = output.split("\n")
+    request_lines = [l for l in lines if "Request:" in l]
+    expected_lines = [l for l in lines if "Expected [" in l]
+    actual_lines = [l for l in lines if "Actual [" in l]
+
+    # Should have at least one of each
+    assert (
+        len(request_lines) > 0
+    ), f"Expected at least one 'Request:' line, got: {output}"
+
+    # In -vvv mode, content should NOT be truncated
+    # Check that we don't see "..." truncation markers in the JSON output lines
+    for line in request_lines + expected_lines + actual_lines:
+        # The line itself should not end with "..." (which indicates truncation)
+        # Note: JSON strings can contain "..." so we check for the truncation pattern
+        if "None" not in line:  # Skip lines that just say "None"
+            # If the line has JSON content, it should not have the truncation marker at the end
+            if "{" in line or "[" in line:
+                assert not line.rstrip().endswith(
+                    "..."
+                ), f"Expected no truncation in -vvv mode, but found '...' in: {line}"
