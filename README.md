@@ -99,7 +99,7 @@ tests/test_samples/test_sample_math.py::test_sample_string_operations PASSED    
 {
   "body": "Hi Bob, how are you?",
   "from": "alice@example.com",
-  "id": 1,
+  "id": "12",
   "subject": "Hello",
   "to": "bob@example.com"
 }
