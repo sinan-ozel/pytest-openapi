@@ -1018,11 +1018,26 @@ def test_post_endpoint(
                 continue
 
         # Check status code (accept both 200 and 201 for POST)
-        actual_response = (
-            response.json()
-            if response.status_code in [200, 201]
-            else response.text
-        )
+        try:
+            actual_response = (
+                response.json()
+                if response.status_code in [200, 201]
+                else response.text
+            )
+        except requests.exceptions.JSONDecodeError as e:
+            print(f"\n{'='*80}")
+            print("JSON DECODE ERROR:")
+            print(f"{'='*80}")
+            print(f"Endpoint: {url}")
+            print(f"Path: {path}")
+            print(f"Status Code: {response.status_code}")
+            print(f"Request Body: {request_test_case}")
+            print(f"Response Headers: {dict(response.headers)}")
+            print(f"Response Text (first 500 chars): {response.text[:500]!r}")
+            print(f"Response Text Length: {len(response.text)}")
+            print(f"Error: {e}")
+            print(f"{'='*80}\n")
+            raise
 
         # In lenient mode, accept any documented status code
         if not strict_examples and response.status_code in documented_statuses:
