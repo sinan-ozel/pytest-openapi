@@ -1026,7 +1026,7 @@ def test_post_endpoint(
             )
         except requests.exceptions.JSONDecodeError as e:
             print(f"\n{'='*80}")
-            print(f"JSON DECODE ERROR:")
+            print("JSON DECODE ERROR:")
             print(f"{'='*80}")
             print(f"Endpoint: {url}")
             print(f"Path: {path}")
