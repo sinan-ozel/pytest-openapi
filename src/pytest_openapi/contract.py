@@ -958,15 +958,15 @@ def test_post_endpoint(
             except Exception:
                 actual_response = response.text
 
-            # Should get 400 Bad Request
-            if response.status_code == 400:
+            # Should get 400 Bad Request or 422 Unprocessable Entity
+            if response.status_code in [400, 422]:
                 # Success - invalid enum was properly rejected
                 log_test_result(
                     "POST",
                     path,
                     request_test_case,
                     400,
-                    "400 Bad Request (invalid enum value)",
+                    "400/422 (invalid enum value)",
                     response.status_code,
                     actual_response,
                     True,
@@ -976,14 +976,14 @@ def test_post_endpoint(
                 )
                 continue
             elif response.status_code >= 500:
-                # Server error - this is bad, should have returned 400
-                error_msg = f"Expected 400 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400, not 5xx."
+                # Server error - this is bad, should have returned 400/422
+                error_msg = f"Expected 400/422 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400 or 422, not 5xx."
                 log_test_result(
                     "POST",
                     path,
                     request_test_case,
                     400,
-                    "400 Bad Request (invalid enum value)",
+                    "400/422 (invalid enum value)",
                     response.status_code,
                     actual_response,
                     False,
@@ -997,9 +997,9 @@ def test_post_endpoint(
                 # Got 200/201 or other status
                 # Invalid enum should have been rejected
                 error_msg = (
-                    f"Expected 400 for invalid enum value, got "
+                    f"Expected 400 or 422 for invalid enum value, got "
                     f"{response.status_code}. Server should validate "
-                    f"enum values and return 400 Bad Request."
+                    f"enum values and return 400 Bad Request or 422 Unprocessable Entity."
                 )
                 log_test_result(
                     "POST",
@@ -1021,7 +1021,11 @@ def test_post_endpoint(
         content_type = response.headers.get("Content-Type", "")
         is_streaming = any(
             stream_type in content_type.lower()
-            for stream_type in ["text/event-stream", "application/x-ndjson", "application/stream+json"]
+            for stream_type in [
+                "text/event-stream",
+                "application/x-ndjson",
+                "application/stream+json",
+            ]
         )
 
         if is_streaming:
@@ -1415,15 +1419,15 @@ def test_put_endpoint(
             except Exception:
                 actual_response = response.text
 
-            # Should get 400 Bad Request
-            if response.status_code == 400:
+            # Should get 400 Bad Request or 422 Unprocessable Entity
+            if response.status_code in [400, 422]:
                 # Success - invalid enum was properly rejected
                 log_test_result(
                     "PUT",
                     resolved_path,
                     request_test_case,
                     400,
-                    "400 Bad Request (invalid enum value)",
+                    "400/422 (invalid enum value)",
                     response.status_code,
                     actual_response,
                     True,
@@ -1433,14 +1437,14 @@ def test_put_endpoint(
                 )
                 continue
             elif response.status_code >= 500:
-                # Server error - this is bad, should have returned 400
-                error_msg = f"Expected 400 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400, not 5xx."
+                # Server error - this is bad, should have returned 400/422
+                error_msg = f"Expected 400/422 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400 or 422, not 5xx."
                 log_test_result(
                     "PUT",
                     resolved_path,
                     request_test_case,
                     400,
-                    "400 Bad Request (invalid enum value)",
+                    "400/422 (invalid enum value)",
                     response.status_code,
                     actual_response,
                     False,
@@ -1452,7 +1456,7 @@ def test_put_endpoint(
                 continue
             else:
                 # Got 200 or other status - invalid enum should have been rejected
-                error_msg = f"Expected 400 for invalid enum value, got {response.status_code}. Server should validate enum values and return 400 Bad Request."
+                error_msg = f"Expected 400 or 422 for invalid enum value, got {response.status_code}. Server should validate enum values and return 400 Bad Request or 422 Unprocessable Entity."
                 log_test_result(
                     "PUT",
                     resolved_path,
@@ -1995,13 +1999,13 @@ def test_post_endpoint_single(
         except Exception:
             actual_response = response.text
 
-        if response.status_code == 400:
+        if response.status_code in [400, 422]:
             log_test_result(
                 "POST",
                 path,
                 request_body,
                 400,
-                "400 Bad Request (invalid enum value)",
+                "400/422 (invalid enum value)",
                 response.status_code,
                 actual_response,
                 True,
@@ -2011,13 +2015,13 @@ def test_post_endpoint_single(
             )
             return True, None
         elif response.status_code >= 500:
-            error_msg = f"Expected 400 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400, not 5xx."
+            error_msg = f"Expected 400/422 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400 or 422, not 5xx."
             log_test_result(
                 "POST",
                 path,
                 request_body,
                 400,
-                "400 Bad Request (invalid enum value)",
+                "400/422 (invalid enum value)",
                 response.status_code,
                 actual_response,
                 False,
@@ -2028,8 +2032,8 @@ def test_post_endpoint_single(
             return False, error_msg
         else:
             error_msg = (
-                f"Expected 400 for invalid enum value, got {response.status_code}. "
-                f"Server should validate enum values and return 400 Bad Request."
+                f"Expected 400 or 422 for invalid enum value, got {response.status_code}. "
+                f"Server should validate enum values and return 400 Bad Request or 422 Unprocessable Entity."
             )
             log_test_result(
                 "POST",
@@ -2050,7 +2054,11 @@ def test_post_endpoint_single(
     content_type = response.headers.get("Content-Type", "")
     is_streaming = any(
         stream_type in content_type.lower()
-        for stream_type in ["text/event-stream", "application/x-ndjson", "application/stream+json"]
+        for stream_type in [
+            "text/event-stream",
+            "application/x-ndjson",
+            "application/stream+json",
+        ]
     )
 
     if is_streaming:
