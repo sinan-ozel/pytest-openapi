@@ -246,6 +246,19 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-streaming-api:
+    build:
+      context: test_servers/streaming_api
+      dockerfile: Dockerfile
+    image: mock-server-streaming-api:latest
+    ports:
+      - "8020:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..
