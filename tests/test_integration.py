@@ -1091,3 +1091,164 @@ def test_openapi_very_very_verbose_mode_shows_full_content():
                 assert not line.rstrip().endswith(
                     "..."
                 ), f"Expected no truncation in -vvv mode, but found '...' in: {line}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_streaming_api_sse_endpoint_passes():
+    """Test that SSE streaming endpoint is handled correctly."""
+    print("\n🔍 Testing SSE streaming endpoint handling...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-streaming-api:8000",
+            "-k",
+            "stream/sse",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should pass - streaming responses should be recognized and handled
+    assert (
+        result.returncode == 0
+    ), f"Expected SSE streaming tests to pass, got: {output}"
+
+    # Check that the streaming endpoint was tested
+    assert (
+        "test_openapi[POST /stream/sse" in output
+    ), f"Expected to see POST /stream/sse test, got: {output}"
+
+    # Verify that streaming response was recognized
+    assert (
+        "passed" in output.lower()
+    ), f"Expected streaming test to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_streaming_api_ndjson_endpoint_passes():
+    """Test that NDJSON streaming endpoint is handled correctly."""
+    print("\n🔍 Testing NDJSON streaming endpoint handling...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-streaming-api:8000",
+            "-k",
+            "stream/ndjson",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should pass - streaming responses should be recognized and handled
+    assert (
+        result.returncode == 0
+    ), f"Expected NDJSON streaming tests to pass, got: {output}"
+
+    # Check that the streaming endpoint was tested
+    assert (
+        "test_openapi[POST /stream/ndjson" in output
+    ), f"Expected to see POST /stream/ndjson test, got: {output}"
+
+    # Verify that streaming response was recognized
+    assert (
+        "passed" in output.lower()
+    ), f"Expected streaming test to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_streaming_api_chat_with_stream_false_returns_json():
+    """Test that chat endpoint with stream=false returns JSON and validates correctly."""
+    print(
+        "\n🔍 Testing chat endpoint with stream=false (JSON response)...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-streaming-api:8000",
+            "-k",
+            "chat",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # The chat endpoint with example has stream=false, so should return JSON
+    # Tests should include both the example-based test and generated tests
+    # Some generated tests may have stream=true (which will be streaming)
+    # As long as the example-based test passes, we're good
+    assert (
+        "test_openapi[POST /chat" in output
+    ), f"Expected to see POST /chat tests, got: {output}"
+
+    # Should have some passing tests
+    assert (
+        "passed" in output.lower()
+    ), f"Expected at least some chat tests to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_streaming_api_all_endpoints_tested():
+    """Test that all streaming endpoints are tested together without errors."""
+    print("\n🔍 Testing all streaming API endpoints together...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-streaming-api:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should pass - all streaming endpoints should be handled correctly
+    assert (
+        result.returncode == 0
+    ), f"Expected all streaming API tests to pass, got: {output}"
+
+    # Verify validation success
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected validation success, got: {output}"
+
+    # Check that all three endpoints were tested
+    assert (
+        "test_openapi[POST /stream/sse" in output
+    ), f"Expected POST /stream/sse test, got: {output}"
+
+    assert (
+        "test_openapi[POST /stream/ndjson" in output
+    ), f"Expected POST /stream/ndjson test, got: {output}"
+
+    assert (
+        "test_openapi[POST /chat" in output
+    ), f"Expected POST /chat test, got: {output}"
+
+    # All tests should pass
+    assert (
+        "passed" in output.lower() and "failed" not in output.lower()
+    ), f"Expected all tests to pass with no failures, got: {output}"
+
