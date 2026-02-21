@@ -171,7 +171,7 @@ async def get_openapi():
                                         "type": "string",
                                         "description": "Server-Sent Events stream",
                                     },
-                                    "example": "data: {\"message\": \"chunk\"}\n\n",
+                                    "example": 'data: {"message": "chunk"}\n\n',
                                 }
                             },
                         }
@@ -209,7 +209,7 @@ async def get_openapi():
                                         "type": "string",
                                         "description": "Newline-delimited JSON stream",
                                     },
-                                    "example": "{\"message\": \"chunk\"}\n",
+                                    "example": '{"message": "chunk"}\n',
                                 }
                             },
                         }
@@ -239,7 +239,10 @@ async def get_openapi():
                                     },
                                     "required": ["message"],
                                 },
-                                "example": {"message": "hello", "stream": False},
+                                "example": {
+                                    "message": "hello",
+                                    "stream": False,
+                                },
                             }
                         },
                     },

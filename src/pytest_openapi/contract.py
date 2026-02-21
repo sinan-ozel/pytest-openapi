@@ -1021,7 +1021,11 @@ def test_post_endpoint(
         content_type = response.headers.get("Content-Type", "")
         is_streaming = any(
             stream_type in content_type.lower()
-            for stream_type in ["text/event-stream", "application/x-ndjson", "application/stream+json"]
+            for stream_type in [
+                "text/event-stream",
+                "application/x-ndjson",
+                "application/stream+json",
+            ]
         )
 
         if is_streaming:
@@ -2050,7 +2054,11 @@ def test_post_endpoint_single(
     content_type = response.headers.get("Content-Type", "")
     is_streaming = any(
         stream_type in content_type.lower()
-        for stream_type in ["text/event-stream", "application/x-ndjson", "application/stream+json"]
+        for stream_type in [
+            "text/event-stream",
+            "application/x-ndjson",
+            "application/stream+json",
+        ]
     )
 
     if is_streaming:

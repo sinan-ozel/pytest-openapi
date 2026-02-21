@@ -1251,4 +1251,3 @@ def test_streaming_api_all_endpoints_tested():
     assert (
         "passed" in output.lower() and "failed" not in output.lower()
     ), f"Expected all tests to pass with no failures, got: {output}"
-
