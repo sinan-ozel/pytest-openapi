@@ -1064,6 +1064,53 @@ def test_post_endpoint(
                 errors.append(error_msg)
                 continue
 
+        # Check if response is a streaming response
+        content_type = response.headers.get("Content-Type", "")
+        is_streaming = any(
+            stream_type in content_type.lower()
+            for stream_type in [
+                "text/event-stream",
+                "application/x-ndjson",
+                "application/stream+json",
+            ]
+        )
+
+        if is_streaming:
+            # Streaming responses are valid - we can't validate their content in the same way
+            # Just verify we got a 200/201 status code
+            if response.status_code in [200, 201]:
+                log_test_result(
+                    "POST",
+                    path,
+                    request_test_case,
+                    expected_status,
+                    expected_response,
+                    response.status_code,
+                    f"[Streaming response: {content_type}]",
+                    True,
+                    None,
+                    test_origin,
+                    documented_statuses=documented_statuses,
+                )
+                continue
+            else:
+                error_msg = f"Expected {expected_status}, got {response.status_code} for streaming response"
+                log_test_result(
+                    "POST",
+                    path,
+                    request_test_case,
+                    expected_status,
+                    expected_response,
+                    response.status_code,
+                    f"[Streaming response: {content_type}]",
+                    False,
+                    error_msg,
+                    test_origin,
+                    documented_statuses=documented_statuses,
+                )
+                errors.append(error_msg)
+                continue
+
         # Check status code (accept both 200 and 201 for POST)
         try:
             actual_response = (
@@ -2043,6 +2090,52 @@ def test_post_endpoint_single(
                 "400 Bad Request (invalid enum value)",
                 response.status_code,
                 actual_response,
+                False,
+                error_msg,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return False, error_msg
+
+    # Check if response is a streaming response
+    content_type = response.headers.get("Content-Type", "")
+    is_streaming = any(
+        stream_type in content_type.lower()
+        for stream_type in [
+            "text/event-stream",
+            "application/x-ndjson",
+            "application/stream+json",
+        ]
+    )
+
+    if is_streaming:
+        # Streaming responses are valid - we can't validate their content in the same way
+        # Just verify we got a 200/201 status code
+        if response.status_code in [200, 201]:
+            log_test_result(
+                "POST",
+                path,
+                request_body,
+                expected_status,
+                expected_response,
+                response.status_code,
+                f"[Streaming response: {content_type}]",
+                True,
+                None,
+                test_origin,
+                documented_statuses=documented_statuses,
+            )
+            return True, None
+        else:
+            error_msg = f"Expected {expected_status}, got {response.status_code} for streaming response"
+            log_test_result(
+                "POST",
+                path,
+                request_body,
+                expected_status,
+                expected_response,
+                response.status_code,
+                f"[Streaming response: {content_type}]",
                 False,
                 error_msg,
                 test_origin,
