@@ -15,7 +15,7 @@ This tool validates OpenAPI quality, generates test cases from schemas, and veri
 This "certifies" that the documentation is complete with descriptions, example, and schema, and that the endpoint behaves as the documentation suggests.
 
 ## Guiding Principles:
-1. A service needs to document clearly. (This means schemas, descriptions, and examples)
+1. A service needs to be documented clearly. (This means schemas, descriptions, and examples)
 2. When the examples and schemas are used, it should respond as expected from the documentation.
 
 📚 **[Read the full documentation](https://sinan-ozel.github.io/pytest-openapi/)**
