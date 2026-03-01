@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-02-28
+
+### Added
+- Streaming response support: POST endpoints returning `text/event-stream`, `application/x-ndjson`, or `application/stream+json` are now detected by `Content-Type` header and validated by status code only, without attempting to parse the body as JSON
+- 422 Unprocessable Entity is now accepted alongside 400 Bad Request as a valid server response when testing invalid enum values
+- Verbose `JSONDecodeError` logging: when response parsing fails, diagnostic details (endpoint, status code, headers, response text) are printed before re-raising the exception
+- Support for POST (and PUT) endpoints with no request body: the plugin now generates and runs a test with an empty body for such endpoints, instead of silently skipping them
+- Path parameter resolution in POST endpoint tests using response example values (consistent with existing PUT behavior)
+
+### Fixed
+- POST endpoints that take only path parameters (no `requestBody` in the OpenAPI spec) were previously untested; they are now exercised correctly
+
 ## [0.2.1] - 2026-02-09
 
 ### Changed

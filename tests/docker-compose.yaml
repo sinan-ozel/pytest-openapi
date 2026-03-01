@@ -259,6 +259,19 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-post-no-request-body:
+    build:
+      context: test_servers/post_no_request_body
+      dockerfile: Dockerfile
+    image: mock-server-post-no-request-body:latest
+    ports:
+      - "8021:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..

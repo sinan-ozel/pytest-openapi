@@ -2001,6 +2001,24 @@ def test_post_endpoint_single(
             "No example found for 200/201 response. Examples are required.",
         )
 
+    # Resolve path parameters using response example values
+    if "{" in path:
+        import re
+
+        for match in re.finditer(r"\{(\w+)\}", path):
+            param_name = match.group(1)
+            value = None
+            if isinstance(expected_response, dict):
+                if param_name in expected_response:
+                    value = expected_response[param_name]
+                elif param_name.endswith("_id") and "id" in expected_response:
+                    value = expected_response["id"]
+                elif "id" in expected_response:
+                    value = expected_response["id"]
+            if value is None:
+                value = 1
+            url = url.replace(f"{{{param_name}}}", str(value))
+
     # Check if this is a negative test (invalid enum value)
     request_body_def = operation.get("requestBody", {})
     request_content = request_body_def.get("content", {})
