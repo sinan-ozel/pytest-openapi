@@ -355,6 +355,11 @@ def pytest_collection_modifyitems(session, config, items):
                             test_origins.append("generated")
                     break
 
+                # If no requestBody is defined, still test the endpoint with no body
+                if not request_test_cases and "requestBody" not in operation:
+                    request_test_cases.append(None)
+                    test_origins.append("example")
+
                 # Create a test item for each request body variant
                 for i, (req_body, origin) in enumerate(
                     zip(request_test_cases, test_origins)

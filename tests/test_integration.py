@@ -1251,3 +1251,32 @@ def test_streaming_api_all_endpoints_tested():
     assert (
         "passed" in output.lower() and "failed" not in output.lower()
     ), f"Expected all tests to pass with no failures, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_post_no_request_body_passes():
+    """Test that POST endpoints with no request body are tested and pass."""
+    print("\n🔍 Testing POST endpoint with no request body...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-no-request-body:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode == 0
+    ), f"Expected POST endpoint with no request body to pass, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected validation success, got: {output}"
+    assert (
+        "test_openapi[POST /cancel/" in output
+    ), f"Expected POST /cancel/ test item to be generated, got: {output}"
