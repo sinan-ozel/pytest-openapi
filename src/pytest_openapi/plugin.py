@@ -1,5 +1,17 @@
 """Pytest plugin for OpenAPI contract testing."""
 
+import json
+import re
+
+import pytest
+import requests
+from _pytest.python import Module
+
+from . import contract
+from .case_generator import generate_test_cases_for_schema
+from .contract import get_test_report_markdown
+from .openapi import validate_openapi_spec
+
 # Module-level variable to store config for access in hooks
 _pytest_config = None
 
@@ -17,7 +29,10 @@ def pytest_addoption(parser):
         "--openapi-no-strict-example-checking",
         action="store_true",
         default=False,
-        help="Use lenient schema validation for example responses instead of strict matching",
+        help=(
+            "Use lenient schema validation for example responses"
+            " instead of strict matching"
+        ),
     )
     group.addoption(
         "--openapi-markdown-output",
@@ -44,7 +59,10 @@ def pytest_addoption(parser):
         action="store",
         metavar="REGEXP",
         default=None,
-        help="Regular expression; endpoints with paths matching this will be ignored",
+        help=(
+            "Regular expression; endpoints with paths matching"
+            " this will be ignored"
+        ),
     )
 
 
@@ -59,13 +77,6 @@ def pytest_configure(config):
     base_url = config.getoption("--openapi")
 
     if base_url:
-        import re
-
-        import pytest
-        import requests
-
-        from .openapi import validate_openapi_spec
-
         strict_examples = not config.getoption(
             "--openapi-no-strict-example-checking"
         )
@@ -106,11 +117,13 @@ def pytest_configure(config):
                 ignore_re = re.compile(ignore_pattern)
             except Exception:
                 pytest.exit(
-                    f"Invalid regular expression for --openapi-ignore: {ignore_pattern}",
+                    f"Invalid regular expression for"
+                    f" --openapi-ignore: {ignore_pattern}",
                     returncode=2,
                 )
 
-        # Store configuration on the config object for use during test generation and execution
+        # Store configuration on the config object for use during
+        # test generation and execution
         config._openapi_base_url = base_url
         config._openapi_spec = spec
         config._openapi_strict_examples = strict_examples
@@ -122,12 +135,8 @@ def pytest_configure(config):
 
         if not no_stdout:
             print(
-                f"\n✅ OpenAPI spec validated and loaded from {base_url}/openapi.json"
-            )
-
-        if not no_stdout:
-            print(
-                f"\n✅ OpenAPI spec validated and loaded from {base_url}/openapi.json"
+                f"\n✅ OpenAPI spec validated and loaded"
+                f" from {base_url}/openapi.json"
             )
 
     # Store config globally for access in other hooks
@@ -166,8 +175,6 @@ def pytest_runtest_logreport(report):
 
             # Only print in very verbose mode (-vv means verbose >= 2)
             if config.option.verbose >= 2:
-                from . import contract
-
                 # Get the most recent test report from contract module
                 if contract.test_reports:
                     test = contract.test_reports[-1]
@@ -186,8 +193,6 @@ def pytest_runtest_logreport(report):
 
                     # Format request
                     if test["request_body"] is not None:
-                        import json
-
                         try:
                             request_str = json.dumps(
                                 test["request_body"],
@@ -227,10 +232,12 @@ def pytest_runtest_logreport(report):
                     # Print the three lines
                     print(f"  Request: {truncate(request_str)}")
                     print(
-                        f"  Expected [{test['expected_status']}]: {truncate(expected_str)}"
+                        f"  Expected [{test['expected_status']}]:"
+                        f" {truncate(expected_str)}"
                     )
                     print(
-                        f"  Actual [{test['actual_status']}]: {truncate(actual_str)}"
+                        f"  Actual [{test['actual_status']}]:"
+                        f" {truncate(actual_str)}"
                     )
 
 
@@ -249,12 +256,6 @@ def pytest_collection_modifyitems(session, config, items):
     spec = getattr(config, "_openapi_spec", None)
     if not spec:
         return
-
-    import pytest
-    from _pytest.python import Module
-
-    from . import contract
-    from .case_generator import generate_test_cases_for_schema
 
     ignore_re = getattr(config, "_openapi_ignore_re", None)
     ignore_pattern = getattr(config, "_openapi_ignore_pattern", None)
@@ -285,13 +286,15 @@ def pytest_collection_modifyitems(session, config, items):
             if ignore_re and ignore_re.search(path):
                 if not no_stdout:
                     print(
-                        f"🔕 Ignoring {method.upper()} {path} due to --openapi-ignore={ignore_pattern}"
+                        f"🔕 Ignoring {method.upper()} {path}"
+                        f" due to --openapi-ignore={ignore_pattern}"
                     )
                 continue
 
             operation = path_item[method]
 
-            # For GET and DELETE: typically no request body, one test per endpoint
+            # For GET and DELETE: typically no request body,
+            # one test per endpoint
             if method in ["get", "delete"]:
                 test_id = f"test_openapi[{method.upper()} {path}]"
 
@@ -355,7 +358,8 @@ def pytest_collection_modifyitems(session, config, items):
                             test_origins.append("generated")
                     break
 
-                # If no requestBody is defined, still test the endpoint with no body
+                # If no requestBody is defined, still test the endpoint
+                # with no body
                 if not request_test_cases and "requestBody" not in operation:
                     request_test_cases.append(None)
                     test_origins.append("example")
@@ -367,7 +371,10 @@ def pytest_collection_modifyitems(session, config, items):
                     origin_marker = (
                         "example" if origin == "example" else "generated"
                     )
-                    test_id = f"test_openapi[{method.upper()} {path} [{origin_marker}-{i+1}]]"
+                    test_id = (
+                        f"test_openapi[{method.upper()} {path}"
+                        f" [{origin_marker}-{i + 1}]]"
+                    )
 
                     # Create test function for this specific request
                     def make_test_func(m, p, op, rb, to):
@@ -435,12 +442,14 @@ def pytest_collection_finish(session):
             if example_count > 0:
                 example_word = "item" if example_count == 1 else "items"
                 print(
-                    f"created {example_count} {example_word} from openapi examples"
+                    f"created {example_count} {example_word}"
+                    " from openapi examples"
                 )
             if generated_count > 0:
                 generated_word = "item" if generated_count == 1 else "items"
                 print(
-                    f"created {generated_count} {generated_word} generated from schema"
+                    f"created {generated_count} {generated_word}"
+                    " generated from schema"
                 )
 
 
@@ -472,8 +481,6 @@ def pytest_sessionfinish(session, exitstatus):
     markdown_output_file = getattr(config, "_openapi_markdown_output", None)
     no_stdout = getattr(config, "_openapi_no_stdout", False)
 
-    from .contract import get_test_report_markdown
-
     # Write markdown report to file if requested
     if markdown_output_file:
         try:
@@ -482,10 +489,12 @@ def pytest_sessionfinish(session, exitstatus):
             if not no_stdout:
                 print(f"\n📝 Full test report saved to: {markdown_output_file}")
                 print(
-                    "   (Configure output file with: --openapi-markdown-output=<filename>)"
+                    "   (Configure output file with:"
+                    " --openapi-markdown-output=<filename>)"
                 )
         except Exception as e:
             print(f"\n⚠️  Warning: Failed to write markdown report: {e}")
 
-    # Don't display the full report to stdout anymore since tests appear as individual pytest items
+    # Don't display the full report to stdout anymore since tests
+    # appear as individual pytest items
     # Users can see test results in pytest's normal output

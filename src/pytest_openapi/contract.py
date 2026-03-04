@@ -1,6 +1,7 @@
 """OpenAPI contract testing - execute tests against live endpoints."""
 
 import json
+import re
 
 import requests
 
@@ -77,7 +78,8 @@ def log_test_result(
         "error_message": error_message,
         "test_case_origin": test_case_origin,
     }
-    # Attach documented status codes (if provided) to the report for clearer expectations
+    # Attach documented status codes (if provided) to the report
+    # for clearer expectations
     report["documented_statuses"] = (
         list(documented_statuses) if documented_statuses else []
     )
@@ -141,7 +143,8 @@ def get_test_report():
             except (TypeError, ValueError):
                 actual_body_str = str(test["actual_body"])
 
-        # Show expected status and any other documented statuses (e.g., 501) as accepted
+        # Show expected status and any other documented statuses
+        # (e.g., 501) as accepted
         documented = test.get("documented_statuses", []) or []
         expected_primary = test["expected_status"]
         statuses = [str(expected_primary)] + [
@@ -240,7 +243,8 @@ def get_test_report_markdown():
 
         report_lines.append("### Expected Response")
         report_lines.append("")
-        # Include documented statuses (for example, 501) alongside primary expected status
+        # Include documented statuses (for example, 501) alongside
+        # primary expected status
         documented = test.get("documented_statuses", []) or []
         expected_primary = test["expected_status"]
         statuses = [str(expected_primary)] + [
@@ -341,7 +345,8 @@ def validate_against_schema(schema, actual, path=""):
     """
     schema_type = schema.get("type")
 
-    # Handle nullable fields (OpenAPI 3.0 uses "nullable": true, OpenAPI 3.1 uses type: ["string", "null"])
+    # Handle nullable fields (OpenAPI 3.0 uses "nullable": true,
+    # OpenAPI 3.1 uses type: ["string", "null"])
     is_nullable = schema.get("nullable", False)
     if isinstance(schema_type, list):
         # OpenAPI 3.1 style: type: ["string", "null"]
@@ -361,7 +366,8 @@ def validate_against_schema(schema, actual, path=""):
                     return True, None
             return (
                 False,
-                f"{path}: Value does not match any of the allowed types: {non_null_types}",
+                f"{path}: Value does not match any of the allowed "
+                f"types: {non_null_types}",
             )
     elif is_nullable and actual is None:
         # OpenAPI 3.0 style: nullable: true
@@ -373,7 +379,8 @@ def validate_against_schema(schema, actual, path=""):
         if actual not in allowed_values:
             return (
                 False,
-                f"{path}: Value '{actual}' is not one of the allowed enum values: {allowed_values}",
+                f"{path}: Value '{actual}' is not one of the "
+                f"allowed enum values: {allowed_values}",
             )
 
     # Check type
@@ -471,7 +478,8 @@ def compare_responses(expected, actual, strict=True):
             if key not in actual:
                 return (
                     False,
-                    f"Missing key in actual response: '{key}'. Expected: {expected}, Actual: {actual}",
+                    f"Missing key in actual response: '{key}'. "
+                    f"Expected: {expected}, Actual: {actual}",
                 )
 
         # Check for extra keys in actual
@@ -479,7 +487,8 @@ def compare_responses(expected, actual, strict=True):
             if key not in expected:
                 return (
                     False,
-                    f"Extra key in actual response: '{key}'. Expected: {expected}, Actual: {actual}",
+                    f"Extra key in actual response: '{key}'. "
+                    f"Expected: {expected}, Actual: {actual}",
                 )
 
         # Check for type mismatches
@@ -490,8 +499,10 @@ def compare_responses(expected, actual, strict=True):
                 if expected_type != actual_type:
                     return (
                         False,
-                        f"Type mismatch for key '{key}': expected {expected_type}, got {actual_type}. "
-                        f"Expected value: {expected[key]}, Actual value: {actual[key]}",
+                        f"Type mismatch for key '{key}': expected "
+                        f"{expected_type}, got {actual_type}. "
+                        f"Expected value: {expected[key]}, "
+                        f"Actual value: {actual[key]}",
                     )
 
                 # Recursively check nested dicts/lists
@@ -511,7 +522,9 @@ def compare_responses(expected, actual, strict=True):
         if len(expected) != len(actual):
             return (
                 False,
-                f"List length mismatch: expected {len(expected)}, got {len(actual)}. Expected: {expected}, Actual: {actual}",
+                f"List length mismatch: expected {len(expected)}, "
+                f"got {len(actual)}. "
+                f"Expected: {expected}, Actual: {actual}",
             )
         for e_item, a_item in zip(expected, actual):
             matches, error = compare_responses(e_item, a_item)
@@ -536,7 +549,8 @@ def compare_structure(expected, actual):
     if type(expected).__name__ != type(actual).__name__:
         return (
             False,
-            f"Type mismatch: expected {type(expected).__name__}, got {type(actual).__name__}",
+            f"Type mismatch: expected {type(expected).__name__}, "
+            f"got {type(actual).__name__}",
         )
 
     if isinstance(expected, dict):
@@ -576,7 +590,10 @@ def test_get_endpoint(
     Args:
         base_url: Base URL of the API server
         path: API endpoint path
-        operation: OpenAPI operation object        strict_examples: If True, strictly match example responses; if False, only validate structure
+        operation: OpenAPI operation object
+        strict_examples: If True, strictly match example responses;
+            if False, only validate structure
+
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
@@ -734,7 +751,10 @@ def test_get_endpoint(
         return True, None
 
     if response.status_code != 200:
-        error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
+        error_msg = (
+            f"Expected status 200, got {response.status_code}. "
+            f"Response: {response.text}"
+        )
         log_test_result(
             "GET",
             path,
@@ -808,7 +828,8 @@ def test_post_endpoint(
         base_url: Base URL of the API server
         path: API endpoint path
         operation: OpenAPI operation object
-        strict_examples: If True, strictly match example responses; if False, only validate structure
+        strict_examples: If True, strictly match example responses;
+            if False, only validate structure
 
     Returns:
         tuple: (success: bool, error_message: str or None)
@@ -977,7 +998,12 @@ def test_post_endpoint(
                 continue
             elif response.status_code >= 500:
                 # Server error - this is bad, should have returned 400/422
-                error_msg = f"Expected 400/422 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400 or 422, not 5xx."
+                error_msg = (
+                    f"Expected 400/422 for invalid enum value, got "
+                    f"{response.status_code} (server error). Server "
+                    "should validate enum values and return 400 or "
+                    "422, not 5xx."
+                )
                 log_test_result(
                     "POST",
                     path,
@@ -999,7 +1025,8 @@ def test_post_endpoint(
                 error_msg = (
                     f"Expected 400 or 422 for invalid enum value, got "
                     f"{response.status_code}. Server should validate "
-                    f"enum values and return 400 Bad Request or 422 Unprocessable Entity."
+                    "enum values and return 400 Bad Request or "
+                    "422 Unprocessable Entity."
                 )
                 log_test_result(
                     "POST",
@@ -1029,8 +1056,8 @@ def test_post_endpoint(
         )
 
         if is_streaming:
-            # Streaming responses are valid - we can't validate their content in the same way
-            # Just verify we got a 200/201 status code
+            # Streaming responses are valid - we can't validate their
+            # content in the same way. Just verify we got a 200/201.
             if response.status_code in [200, 201]:
                 log_test_result(
                     "POST",
@@ -1047,7 +1074,10 @@ def test_post_endpoint(
                 )
                 continue
             else:
-                error_msg = f"Expected {expected_status}, got {response.status_code} for streaming response"
+                error_msg = (
+                    f"Expected {expected_status}, got "
+                    f"{response.status_code} for streaming response"
+                )
                 log_test_result(
                     "POST",
                     path,
@@ -1076,8 +1106,8 @@ def test_post_endpoint(
         )
 
         if is_streaming:
-            # Streaming responses are valid - we can't validate their content in the same way
-            # Just verify we got a 200/201 status code
+            # Streaming responses are valid - we can't validate their
+            # content in the same way. Just verify we got a 200/201.
             if response.status_code in [200, 201]:
                 log_test_result(
                     "POST",
@@ -1094,7 +1124,10 @@ def test_post_endpoint(
                 )
                 continue
             else:
-                error_msg = f"Expected {expected_status}, got {response.status_code} for streaming response"
+                error_msg = (
+                    f"Expected {expected_status}, got "
+                    f"{response.status_code} for streaming response"
+                )
                 log_test_result(
                     "POST",
                     path,
@@ -1220,7 +1253,10 @@ def test_post_endpoint(
             continue
 
         if response.status_code not in [200, 201]:
-            error_msg = f"Expected status 200/201, got {response.status_code}. Response: {response.text}"
+            error_msg = (
+                f"Expected status 200/201, got "
+                f"{response.status_code}. Response: {response.text}"
+            )
             log_test_result(
                 "POST",
                 path,
@@ -1238,8 +1274,9 @@ def test_post_endpoint(
             continue
 
         # Check response matches example or schema
-        # If request is example-based AND response has example, use strict/lenient matching
-        # If request is schema-generated, always use schema validation for response
+        # If request is example-based AND response has example, use
+        # strict/lenient matching. If request is schema-generated,
+        # always use schema validation for response.
         if test_origin == "example" and response_is_example_based:
             matches, error = compare_responses(
                 expected_response, actual_response, strict=strict_examples
@@ -1301,7 +1338,8 @@ def test_put_endpoint(
         base_url: Base URL of the API server
         path: API endpoint path (may contain path parameters)
         operation: OpenAPI operation object
-        strict_examples: If True, strictly match example responses; if False, only validate structure
+        strict_examples: If True, strictly match example responses;
+            if False, only validate structure
 
     Returns:
         tuple: (success: bool, error_message: str or None)
@@ -1330,8 +1368,9 @@ def test_put_endpoint(
                     request_test_cases.append(ex_obj["value"])
                     test_case_origins.append("example")
 
-        # Skip schema-generated tests for PUT - they don't work well with path parameters
-        # that reference specific resource IDs from examples
+        # Skip schema-generated tests for PUT - they don't work well
+        # with path parameters that reference specific resource IDs
+        # from examples
         break
 
     if not request_test_cases:
@@ -1388,8 +1427,6 @@ def test_put_endpoint(
     url = f"{base_url}{path}"
     resolved_path = path
     if "{" in path:
-        import re
-
         for match in re.finditer(r"\{(\w+)\}", path):
             param_name = match.group(1)
 
@@ -1485,7 +1522,12 @@ def test_put_endpoint(
                 continue
             elif response.status_code >= 500:
                 # Server error - this is bad, should have returned 400/422
-                error_msg = f"Expected 400/422 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400 or 422, not 5xx."
+                error_msg = (
+                    f"Expected 400/422 for invalid enum value, got "
+                    f"{response.status_code} (server error). Server "
+                    "should validate enum values and return 400 or "
+                    "422, not 5xx."
+                )
                 log_test_result(
                     "PUT",
                     resolved_path,
@@ -1502,8 +1544,14 @@ def test_put_endpoint(
                 errors.append(error_msg)
                 continue
             else:
-                # Got 200 or other status - invalid enum should have been rejected
-                error_msg = f"Expected 400 or 422 for invalid enum value, got {response.status_code}. Server should validate enum values and return 400 Bad Request or 422 Unprocessable Entity."
+                # Got 200 or other status - invalid enum should have
+                # been rejected
+                error_msg = (
+                    f"Expected 400 or 422 for invalid enum value, got "
+                    f"{response.status_code}. Server should validate "
+                    "enum values and return 400 Bad Request or "
+                    "422 Unprocessable Entity."
+                )
                 log_test_result(
                     "PUT",
                     resolved_path,
@@ -1612,7 +1660,10 @@ def test_put_endpoint(
             continue
 
         if response.status_code != 200:
-            error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
+            error_msg = (
+                f"Expected status 200, got {response.status_code}. "
+                f"Response: {response.text}"
+            )
             log_test_result(
                 "PUT",
                 resolved_path,
@@ -1629,9 +1680,10 @@ def test_put_endpoint(
             errors.append(error_msg)
             continue
 
-        # Check response matches example or schema
-        # If request is example-based AND response has example, use strict/lenient matching
-        # If request is schema-generated, always use schema validation for response
+        # Check response matches example or schema. If request is
+        # example-based AND response has example, use strict/lenient
+        # matching. If request is schema-generated, always use schema
+        # validation for response.
         if test_origin == "example" and response_is_example_based:
             matches, error = compare_responses(
                 expected_response, actual_response, strict=strict_examples
@@ -1692,12 +1744,14 @@ def test_delete_endpoint(
         base_url: Base URL of the API server
         path: API endpoint path (may contain path parameters)
         operation: OpenAPI operation object
-        strict_examples: If True, strictly match example responses; if False, only validate structure
+        strict_examples: If True, strictly match example responses;
+            if False, only validate structure
 
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
-    # For DELETE, we need to get path parameters from the 200/204 response example or schema
+    # For DELETE, we need to get path parameters from the 200/204
+    # response example or schema
     responses = operation.get("responses", {})
 
     # Get all documented response status codes
@@ -1759,10 +1813,9 @@ def test_delete_endpoint(
     url = f"{base_url}{path}"
     resolved_path = path
     if "{" in path:
-        import re
-
         # For DELETE, use a hardcoded ID if no example provides it
-        # This is a simplification - in reality we might need to create a resource first
+        # This is a simplification - in reality we might need to
+        # create a resource first
         for match in re.finditer(r"\{(\w+)\}", path):
             param_name = match.group(1)
 
@@ -1901,7 +1954,10 @@ def test_delete_endpoint(
         return True, None
 
     if response.status_code not in [200, 204]:
-        error_msg = f"Expected status 200/204, got {response.status_code}. Response: {response.text}"
+        error_msg = (
+            f"Expected status 200/204, got {response.status_code}. "
+            f"Response: {response.text}"
+        )
         log_test_result(
             "DELETE",
             resolved_path,
@@ -1944,7 +2000,8 @@ def test_post_endpoint_single(
 ):
     """Test a single POST request with a specific request body.
 
-    This function tests one request body at a time, suitable for parametrized pytest tests.
+    This function tests one request body at a time, suitable for
+    parametrized pytest tests.
 
     Args:
         base_url: Base URL of the API server
@@ -1952,7 +2009,8 @@ def test_post_endpoint_single(
         operation: OpenAPI operation object
         request_body: The specific request body to test
         test_origin: 'example' or 'generated'
-        strict_examples: If True, strictly match example responses; if False, only validate structure
+        strict_examples: If True, strictly match example responses;
+            if False, only validate structure
         timeout: Request timeout in seconds
 
     Returns:
@@ -2003,8 +2061,6 @@ def test_post_endpoint_single(
 
     # Resolve path parameters using response example values
     if "{" in path:
-        import re
-
         for match in re.finditer(r"\{(\w+)\}", path):
             param_name = match.group(1)
             value = None
@@ -2080,7 +2136,12 @@ def test_post_endpoint_single(
             )
             return True, None
         elif response.status_code >= 500:
-            error_msg = f"Expected 400/422 for invalid enum value, got {response.status_code} (server error). Server should validate enum values and return 400 or 422, not 5xx."
+            error_msg = (
+                f"Expected 400/422 for invalid enum value, got "
+                f"{response.status_code} (server error). Server "
+                "should validate enum values and return 400 or "
+                "422, not 5xx."
+            )
             log_test_result(
                 "POST",
                 path,
@@ -2097,8 +2158,10 @@ def test_post_endpoint_single(
             return False, error_msg
         else:
             error_msg = (
-                f"Expected 400 or 422 for invalid enum value, got {response.status_code}. "
-                f"Server should validate enum values and return 400 Bad Request or 422 Unprocessable Entity."
+                f"Expected 400 or 422 for invalid enum value, got "
+                f"{response.status_code}. Server should validate "
+                "enum values and return 400 Bad Request or "
+                "422 Unprocessable Entity."
             )
             log_test_result(
                 "POST",
@@ -2127,8 +2190,8 @@ def test_post_endpoint_single(
     )
 
     if is_streaming:
-        # Streaming responses are valid - we can't validate their content in the same way
-        # Just verify we got a 200/201 status code
+        # Streaming responses are valid - we can't validate their
+        # content in the same way. Just verify we got a 200/201.
         if response.status_code in [200, 201]:
             log_test_result(
                 "POST",
@@ -2145,7 +2208,10 @@ def test_post_endpoint_single(
             )
             return True, None
         else:
-            error_msg = f"Expected {expected_status}, got {response.status_code} for streaming response"
+            error_msg = (
+                f"Expected {expected_status}, got "
+                f"{response.status_code} for streaming response"
+            )
             log_test_result(
                 "POST",
                 path,
@@ -2173,8 +2239,8 @@ def test_post_endpoint_single(
     )
 
     if is_streaming:
-        # Streaming responses are valid - we can't validate their content in the same way
-        # Just verify we got a 200/201 status code
+        # Streaming responses are valid - we can't validate their
+        # content in the same way. Just verify we got a 200/201.
         if response.status_code in [200, 201]:
             log_test_result(
                 "POST",
@@ -2191,7 +2257,10 @@ def test_post_endpoint_single(
             )
             return True, None
         else:
-            error_msg = f"Expected {expected_status}, got {response.status_code} for streaming response"
+            error_msg = (
+                f"Expected {expected_status}, got "
+                f"{response.status_code} for streaming response"
+            )
             log_test_result(
                 "POST",
                 path,
@@ -2292,7 +2361,10 @@ def test_post_endpoint_single(
         return True, None
 
     if response.status_code not in [200, 201]:
-        error_msg = f"Expected status 200/201, got {response.status_code}. Response: {response.text}"
+        error_msg = (
+            f"Expected status 200/201, got {response.status_code}. "
+            f"Response: {response.text}"
+        )
         log_test_result(
             "POST",
             path,
@@ -2365,7 +2437,8 @@ def test_put_endpoint_single(
 ):
     """Test a single PUT request with a specific request body.
 
-    This function tests one request body at a time, suitable for parametrized pytest tests.
+    This function tests one request body at a time, suitable for
+    parametrized pytest tests.
 
     Args:
         base_url: Base URL of the API server
@@ -2373,7 +2446,8 @@ def test_put_endpoint_single(
         operation: OpenAPI operation object
         request_body: The specific request body to test
         test_origin: 'example' or 'generated'
-        strict_examples: If True, strictly match example responses; if False, only validate structure
+        strict_examples: If True, strictly match example responses;
+            if False, only validate structure
         timeout: Request timeout in seconds
 
     Returns:
@@ -2423,8 +2497,6 @@ def test_put_endpoint_single(
     # Resolve path parameters with values from the response example
     url = f"{base_url}{path}"
     if "{" in path:
-        import re
-
         for match in re.finditer(r"\{(\w+)\}", path):
             param_name = match.group(1)
 
@@ -2550,7 +2622,10 @@ def test_put_endpoint_single(
         return True, None
 
     if response.status_code != 200:
-        error_msg = f"Expected status 200, got {response.status_code}. Response: {response.text}"
+        error_msg = (
+            f"Expected status 200, got {response.status_code}. "
+            f"Response: {response.text}"
+        )
         log_test_result(
             "PUT",
             path,

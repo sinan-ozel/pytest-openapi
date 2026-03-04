@@ -15,7 +15,8 @@ def check_request_body_has_example(method, path, operation):
         operation: OpenAPI operation object
 
     Returns:
-        str or None: Error message if example AND schema are missing, None otherwise
+        str or None: Error message if example AND schema are missing,
+            None otherwise
     """
     request_body = operation.get("requestBody", {})
     content = request_body.get("content", {})
@@ -31,7 +32,10 @@ def check_request_body_has_example(method, path, operation):
             break
 
     if content and not has_example_or_schema:
-        return f"  - {method.upper()} {path}: Missing request body example or schema"
+        return (
+            f"  - {method.upper()} {path}:"
+            " Missing request body example or schema"
+        )
 
     return None
 
@@ -64,7 +68,8 @@ def check_response_has_example(method, path, status_code, response_obj):
         response_obj: OpenAPI response object
 
     Returns:
-        str or None: Error message if example AND schema are missing, None otherwise
+        str or None: Error message if example AND schema are missing,
+            None otherwise
     """
     content = response_obj.get("content", {})
 
@@ -79,7 +84,10 @@ def check_response_has_example(method, path, status_code, response_obj):
             break
 
     if content and not has_example_or_schema:
-        return f"  - {method.upper()} {path}: Missing response example or schema for status {status_code}"
+        return (
+            f"  - {method.upper()} {path}: Missing response"
+            f" example or schema for status {status_code}"
+        )
 
     return None
 
@@ -163,7 +171,8 @@ def check_endpoint_schema_descriptions(method, path, operation):
                 schema_errors = check_schema_descriptions(schema)
                 for error in schema_errors:
                     errors.append(
-                        f"  - {method.upper()} {path} response {status_code}: {error}"
+                        f"  - {method.upper()} {path}"
+                        f" response {status_code}: {error}"
                     )
 
     return errors
@@ -175,7 +184,8 @@ def validate_openapi_spec(base_url, timeout=10):
 
     Checks:
     1. /openapi.json endpoint is accessible
-    2. All GET/POST/PUT/DELETE endpoints have request examples (where applicable)
+    2. All GET/POST/PUT/DELETE endpoints have request examples
+       (where applicable)
     3. All endpoints have response schemas
 
     Args:
@@ -250,8 +260,9 @@ def validate_openapi_spec(base_url, timeout=10):
         for error in errors:
             print(error)
         print(
-            "\npytest-openapi requires proper schemas with descriptions for all fields, "
-            "and either examples or complete schemas for all endpoints."
+            "\npytest-openapi requires proper schemas with"
+            " descriptions for all fields,"
+            " and either examples or complete schemas for all endpoints."
         )
         sys.exit(1)
 
