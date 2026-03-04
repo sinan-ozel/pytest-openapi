@@ -50,6 +50,9 @@ publish = [
 [tool.ruff]
 line-length = 80
 
+[tool.ruff.lint]
+select = ["E", "F", "I", "PLC0415"]
+
 [tool.ruff.lint.per-file-ignores]
 "**/test_*.py" = ["RUF001"]
 

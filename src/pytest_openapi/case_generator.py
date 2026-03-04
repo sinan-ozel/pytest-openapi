@@ -1,5 +1,7 @@
 """Generate test cases from OpenAPI schemas."""
 
+from itertools import product
+
 
 def generate_invalid_enum_value(schema):
     """Generate an invalid value for an enum field.
@@ -61,19 +63,21 @@ def generate_string_test_cases(schema):
     # Check for pattern (regex)
     if "pattern" in schema:
         try:
-            import exrex
+            import exrex  # noqa: PLC0415
 
             # Generate a few test cases from the regex
             test_cases.extend(list(exrex.generate(schema["pattern"]))[:3])
         except ImportError:
             print(
-                "⚠️  Warning: 'exrex' package not installed. Cannot generate test cases from regex patterns."
+                "⚠️  Warning: 'exrex' package not installed. "
+                "Cannot generate test cases from regex patterns."
             )
             print("   Install with: pip install exrex")
             test_cases.append("test-string")
         except Exception as e:
             print(
-                f"⚠️  Warning: Could not generate from pattern '{schema['pattern']}': {e}"
+                f"⚠️  Warning: Could not generate from pattern "
+                f"'{schema['pattern']}': {e}"
             )
             test_cases.append("test-string")
 
@@ -216,7 +220,11 @@ def generate_integer_test_cases(schema, field_name="field"):
             min_val = -9223372036854775808
         else:
             min_val = -1000000
-            warning = f"⚠️  Field '{field_name}': No minimum specified. Testing with very large negative numbers. Add 'minimum' to schema to restrict."
+            warning = (
+                f"⚠️  Field '{field_name}': No minimum specified. "
+                "Testing with very large negative numbers. "
+                "Add 'minimum' to schema to restrict."
+            )
 
     if exclusive_max is not None:
         max_val = exclusive_max - multiple_of
@@ -231,7 +239,11 @@ def generate_integer_test_cases(schema, field_name="field"):
         else:
             max_val = 1000000
             if not warning:
-                warning = f"⚠️  Field '{field_name}': No maximum specified. Testing with very large positive numbers. Add 'maximum' to schema to restrict."
+                warning = (
+                    f"⚠️  Field '{field_name}': No maximum specified. "
+                    "Testing with very large positive numbers. "
+                    "Add 'maximum' to schema to restrict."
+                )
 
     # Generate examples respecting multipleOf
     def round_to_multiple(val):
@@ -306,7 +318,11 @@ def generate_number_test_cases(schema, field_name="field"):
         min_val = minimum
     else:
         min_val = -1000000.0
-        warning = f"⚠️  Field '{field_name}': No minimum specified. Testing with very large negative numbers. Add 'minimum' to schema to restrict."
+        warning = (
+            f"⚠️  Field '{field_name}': No minimum specified. "
+            "Testing with very large negative numbers. "
+            "Add 'minimum' to schema to restrict."
+        )
 
     if exclusive_max is not None:
         max_val = exclusive_max - 0.01
@@ -315,7 +331,11 @@ def generate_number_test_cases(schema, field_name="field"):
     else:
         max_val = 1000000.0
         if not warning:
-            warning = f"⚠️  Field '{field_name}': No maximum specified. Testing with very large positive numbers. Add 'maximum' to schema to restrict."
+            warning = (
+                f"⚠️  Field '{field_name}': No maximum specified. "
+                "Testing with very large positive numbers. "
+                "Add 'maximum' to schema to restrict."
+            )
 
     # Add boundary values
     test_cases.append(float(min_val))
@@ -443,10 +463,8 @@ def generate_object_test_cases(schema, field_name="field"):
         # Ensure we have at least one value
         prop_values[prop_name] = prop_test_cases or [None]
 
-    # Create a bounded Cartesian product of property values to produce multiple objects
-    # Limit the total generated objects to avoid explosion
-    from itertools import product
-
+    # Create a bounded Cartesian product of property values to produce
+    # multiple objects. Limit the total generated objects to avoid explosion.
     MAX_COMBINATIONS = 10
     keys = list(prop_values.keys())
     # Build iterables in a deterministic order
@@ -476,7 +494,8 @@ def generate_test_cases_for_schema(schema, field_name="field"):
         field_name: Name of the field (for error messages)
 
     Returns:
-        tuple: (list of test values, optional warning message or list of warnings)
+        tuple: (list of test values, optional warning message or
+        list of warnings)
     """
     schema_type = schema.get("type", "string")
 

@@ -36,7 +36,13 @@ isort src/
 
 echo ""
 echo "=========================================="
-echo "Running Ruff (linter)..."
+echo "Running Ruff (auto-fix imports and style)..."
+echo "=========================================="
+ruff check --fix ./src || true
+
+echo ""
+echo "=========================================="
+echo "Running Ruff (final check - will fail on remaining issues)..."
 echo "=========================================="
 ruff check ./src
 
