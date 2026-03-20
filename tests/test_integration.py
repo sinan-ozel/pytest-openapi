@@ -1254,6 +1254,84 @@ def test_streaming_api_all_endpoints_tested():
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_streaming_vvv_shows_sse_content_not_placeholder():
+    """Test that -vvv mode shows collected SSE content, not a placeholder."""
+    print(
+        "\n🔍 Testing -vvv shows SSE content instead of placeholder...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-streaming-api:8000",
+            "-k",
+            "stream/sse",
+            "-vvv",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    assert (
+        result.returncode == 0
+    ), f"Expected SSE streaming tests to pass, got: {output}"
+
+    # Should NOT show the opaque placeholder string
+    assert (
+        "[Streaming response:" not in output
+    ), f"Expected no placeholder, but got: {output}"
+
+    # Should show actual collected chunk content
+    assert (
+        "Chunk" in output
+    ), f"Expected actual streaming content ('Chunk') in -vvv output, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_streaming_vvv_shows_ndjson_content_not_placeholder():
+    """Test that -vvv mode shows collected NDJSON content, not a placeholder."""
+    print(
+        "\n🔍 Testing -vvv shows NDJSON content instead of placeholder...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-streaming-api:8000",
+            "-k",
+            "stream/ndjson",
+            "-vvv",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    assert (
+        result.returncode == 0
+    ), f"Expected NDJSON streaming tests to pass, got: {output}"
+
+    # Should NOT show the opaque placeholder string
+    assert (
+        "[Streaming response:" not in output
+    ), f"Expected no placeholder, but got: {output}"
+
+    # Should show actual collected chunk content
+    assert (
+        "Chunk" in output
+    ), f"Expected actual streaming content ('Chunk') in -vvv output, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
 def test_post_no_request_body_passes():
     """Test that POST endpoints with no request body are tested and pass."""
     print("\n🔍 Testing POST endpoint with no request body...", flush=True)
