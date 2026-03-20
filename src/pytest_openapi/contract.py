@@ -11,6 +11,56 @@ from .case_generator import generate_test_cases_for_schema
 test_reports = []
 
 
+def collect_streaming_response(response):
+    """Collect and parse streaming response content into a structured
+    form.
+
+    Reads the buffered response text and parses SSE or NDJSON chunks.
+
+    Args:
+        response: requests.Response object with a streaming content-type
+
+    Returns:
+        list or str: List of parsed chunks for SSE/NDJSON, raw text otherwise
+    """
+    content_type = response.headers.get("Content-Type", "").lower()
+    text = response.text
+
+    if "text/event-stream" in content_type:
+        chunks = []
+        for line in text.splitlines():
+            line = line.strip()
+            if line.startswith("data:"):
+                data = line[5:].strip()
+                if not data:
+                    continue
+                if data == "[DONE]":
+                    chunks.append("[DONE]")
+                else:
+                    try:
+                        chunks.append(json.loads(data))
+                    except (json.JSONDecodeError, ValueError):
+                        chunks.append(data)
+        return chunks if chunks else text
+
+    if (
+        "application/x-ndjson" in content_type
+        or "application/stream+json" in content_type
+    ):
+        chunks = []
+        for line in text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                chunks.append(json.loads(line))
+            except (json.JSONDecodeError, ValueError):
+                chunks.append(line)
+        return chunks if chunks else text
+
+    return text
+
+
 def make_request(method, url, json=None, timeout=10):
     """Wrapper for HTTP requests that logs all requests and responses
     for reporting.
@@ -1066,7 +1116,7 @@ def test_post_endpoint(
                     expected_status,
                     expected_response,
                     response.status_code,
-                    f"[Streaming response: {content_type}]",
+                    collect_streaming_response(response),
                     True,
                     None,
                     test_origin,
@@ -1085,7 +1135,7 @@ def test_post_endpoint(
                     expected_status,
                     expected_response,
                     response.status_code,
-                    f"[Streaming response: {content_type}]",
+                    collect_streaming_response(response),
                     False,
                     error_msg,
                     test_origin,
@@ -1116,7 +1166,7 @@ def test_post_endpoint(
                     expected_status,
                     expected_response,
                     response.status_code,
-                    f"[Streaming response: {content_type}]",
+                    collect_streaming_response(response),
                     True,
                     None,
                     test_origin,
@@ -1135,7 +1185,7 @@ def test_post_endpoint(
                     expected_status,
                     expected_response,
                     response.status_code,
-                    f"[Streaming response: {content_type}]",
+                    collect_streaming_response(response),
                     False,
                     error_msg,
                     test_origin,
@@ -2200,7 +2250,7 @@ def test_post_endpoint_single(
                 expected_status,
                 expected_response,
                 response.status_code,
-                f"[Streaming response: {content_type}]",
+                collect_streaming_response(response),
                 True,
                 None,
                 test_origin,
@@ -2219,7 +2269,7 @@ def test_post_endpoint_single(
                 expected_status,
                 expected_response,
                 response.status_code,
-                f"[Streaming response: {content_type}]",
+                collect_streaming_response(response),
                 False,
                 error_msg,
                 test_origin,
@@ -2249,7 +2299,7 @@ def test_post_endpoint_single(
                 expected_status,
                 expected_response,
                 response.status_code,
-                f"[Streaming response: {content_type}]",
+                collect_streaming_response(response),
                 True,
                 None,
                 test_origin,
@@ -2268,7 +2318,7 @@ def test_post_endpoint_single(
                 expected_status,
                 expected_response,
                 response.status_code,
-                f"[Streaming response: {content_type}]",
+                collect_streaming_response(response),
                 False,
                 error_msg,
                 test_origin,
