@@ -1412,9 +1412,7 @@ def test_components_ref_type_mismatch_detected():
     `year` as a string instead of integer. The plugin must dereference $ref to
     catch this error.
     """
-    print(
-        "\n🔍 Testing components/$ref type mismatch detection...", flush=True
-    )
+    print("\n🔍 Testing components/$ref type mismatch detection...", flush=True)
     time.sleep(0.5)
 
     result = subprocess.run(
@@ -1436,9 +1434,9 @@ def test_components_ref_type_mismatch_detected():
     ), f"Expected tests to fail due to type mismatch via $ref, got: {output}"
 
     # Should mention the offending field or a type error
-    assert "year" in output or "type mismatch" in output.lower(), (
-        f"Expected error about 'year' field type mismatch, got: {output}"
-    )
+    assert (
+        "year" in output or "type mismatch" in output.lower()
+    ), f"Expected error about 'year' field type mismatch, got: {output}"
 
 
 @pytest.mark.depends(on=["test_openapi_flag_is_recognized"])

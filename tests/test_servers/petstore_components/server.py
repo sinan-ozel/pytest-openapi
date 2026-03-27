@@ -173,7 +173,10 @@ def openapi():
                                 "in": "path",
                                 "required": True,
                                 "description": "ID of the pet to retrieve",
-                                "schema": {"type": "integer", "format": "int64"},
+                                "schema": {
+                                    "type": "integer",
+                                    "format": "int64",
+                                },
                             }
                         ],
                         "responses": {
@@ -218,7 +221,10 @@ def openapi():
                                 "in": "path",
                                 "required": True,
                                 "description": "ID of the pet to delete",
-                                "schema": {"type": "integer", "format": "int64"},
+                                "schema": {
+                                    "type": "integer",
+                                    "format": "int64",
+                                },
                             }
                         ],
                         "responses": {

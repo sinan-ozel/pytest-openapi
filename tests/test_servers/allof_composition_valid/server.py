@@ -259,10 +259,24 @@ def register_vehicle():
     data = request.get_json()
     vehicle_type = data.get("type")
     if vehicle_type not in ("electric", "gas"):
-        return jsonify({"error": f"Invalid type '{vehicle_type}'. Must be 'electric' or 'gas'."}), 400
+        return (
+            jsonify(
+                {
+                    "error": f"Invalid type '{vehicle_type}'. Must be 'electric' or 'gas'."
+                }
+            ),
+            400,
+        )
     fuel_type = data.get("fuel_type")
     if fuel_type is not None and fuel_type not in ("gasoline", "diesel"):
-        return jsonify({"error": f"Invalid fuel_type '{fuel_type}'. Must be 'gasoline' or 'diesel'."}), 400
+        return (
+            jsonify(
+                {
+                    "error": f"Invalid fuel_type '{fuel_type}'. Must be 'gasoline' or 'diesel'."
+                }
+            ),
+            400,
+        )
     new_vehicle = {
         "id": len(VEHICLES_DB) + 1,
         "make": data["make"],
@@ -271,7 +285,9 @@ def register_vehicle():
         "type": vehicle_type,
     }
     if vehicle_type == "electric":
-        new_vehicle["battery_capacity_kwh"] = data.get("battery_capacity_kwh", 75.0)
+        new_vehicle["battery_capacity_kwh"] = data.get(
+            "battery_capacity_kwh", 75.0
+        )
         new_vehicle["range_km"] = data.get("range_km", 400)
     else:
         new_vehicle["engine_size_liters"] = data.get("engine_size_liters", 2.0)

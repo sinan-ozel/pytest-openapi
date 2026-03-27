@@ -215,7 +215,9 @@ def create_book():
                 "id": 3,
                 "title": data.get("title", "Design Patterns"),
                 "isbn": data.get("isbn", "978-0201633610"),
-                "year": str(data.get("year", 1994)),  # BUG: string instead of integer
+                "year": str(
+                    data.get("year", 1994)
+                ),  # BUG: string instead of integer
                 "price": data.get("price", 54.99),
                 "author": {
                     "id": 1,

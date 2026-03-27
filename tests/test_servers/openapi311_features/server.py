@@ -360,7 +360,14 @@ def update_user(user_id):
     data = request.get_json()
     status = data.get("status")
     if status is not None and status not in ("active", "suspended", "deleted"):
-        return jsonify({"error": f"Invalid status '{status}'. Must be one of: active, suspended, deleted."}), 400
+        return (
+            jsonify(
+                {
+                    "error": f"Invalid status '{status}'. Must be one of: active, suspended, deleted."
+                }
+            ),
+            400,
+        )
     user = dict(USERS_DB[user_id])
     for field in ("display_name", "phone", "status"):
         if field in data:
