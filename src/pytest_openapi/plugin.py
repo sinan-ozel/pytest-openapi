@@ -95,7 +95,7 @@ def pytest_configure(config):
             )
             response.raise_for_status()
             spec = response.json()
-        except Exception as e:
+        except (requests.exceptions.RequestException, ValueError) as e:
             pytest.exit(f"\n❌ Failed to fetch OpenAPI spec: {e}", returncode=1)
 
         # Reset server state if /reset endpoint exists (for testing)
@@ -106,7 +106,7 @@ def pytest_configure(config):
             if reset_response.status_code == 200:
                 if not no_stdout:
                     print(f"🔄 Server state reset via {base_url}/reset")
-        except Exception:
+        except requests.exceptions.RequestException:
             # Server doesn't have /reset endpoint or it failed - that's OK
             pass
 
@@ -115,7 +115,7 @@ def pytest_configure(config):
         if ignore_pattern:
             try:
                 ignore_re = re.compile(ignore_pattern)
-            except Exception:
+            except re.error:
                 pytest.exit(
                     f"Invalid regular expression for"
                     f" --openapi-ignore: {ignore_pattern}",
@@ -307,7 +307,12 @@ def pytest_collection_modifyitems(session, config, items):
                         }
                         test_fn = func_map[m]
                         success, error = test_fn(
-                            base_url, p, op, strict_examples, timeout=timeout
+                            base_url,
+                            p,
+                            op,
+                            strict_examples,
+                            timeout=timeout,
+                            spec=spec,
                         )
                         if not success:
                             pytest.fail(f"{m.upper()} {p}: {error}")
@@ -351,7 +356,7 @@ def pytest_collection_modifyitems(session, config, items):
                     if "schema" in media_obj:
                         schema = media_obj["schema"]
                         generated, _ = generate_test_cases_for_schema(
-                            schema, "request_body"
+                            schema, "request_body", spec
                         )
                         for gen_case in generated:
                             request_test_cases.append(gen_case)
@@ -392,6 +397,7 @@ def pytest_collection_modifyitems(session, config, items):
                                 to,
                                 strict_examples,
                                 timeout=timeout,
+                                spec=spec,
                             )
                             if not success:
                                 pytest.fail(f"{m.upper()} {p}: {error}")
@@ -492,7 +498,7 @@ def pytest_sessionfinish(session, exitstatus):
                     "   (Configure output file with:"
                     " --openapi-markdown-output=<filename>)"
                 )
-        except Exception as e:
+        except OSError as e:
             print(f"\n⚠️  Warning: Failed to write markdown report: {e}")
 
     # Don't display the full report to stdout anymore since tests

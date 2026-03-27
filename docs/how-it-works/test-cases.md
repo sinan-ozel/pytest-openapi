@@ -9,6 +9,18 @@ Test cases are collected from:
 Schema-based generation allows testing even when examples
 are incomplete or missing.
 
+### Schema Resolution
+
+Before generating test cases, schemas are fully resolved:
+
+- **`$ref` pointers** are followed and their target schemas are inlined. In OpenAPI 3.1.x, sibling keywords next to a `$ref` are merged in (overriding the referenced schema where they conflict).
+- **`allOf` schemas** are merged: properties and `required` lists from every sub-schema are combined into a single flat schema before generation.
+- **Nullable types** (`type: ["string", "null"]` in OpenAPI 3.1.x) are handled by extracting the primary non-null type for generation purposes.
+
+### Object Test Cases
+
+For object schemas, pytest-openapi generates test cases by taking the Cartesian product of valid values for each property. Only valid enum values are included in these combinations to avoid generating request bodies that would be rejected by the server.
+
 ## Validation Strategy
 
 pytest-openapi uses different validation approaches depending on the test case origin:

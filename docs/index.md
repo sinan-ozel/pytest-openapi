@@ -74,7 +74,8 @@ pytest --openapi=http://localhost:8000 --openapi-ignore=(auth|mcp)
 pytest --openapi=http://localhost:8000 --openapi-ignore=(v[0-9]+/auth|mcp)
 ```
 
-This will:
+### `--openapi-no-stdout`
+Suppress all plugin output to stdout. This will:
 - Suppress all output to stdout
 - Still return appropriate exit codes (0 for success, 1 for failure)
 - Can be combined with `--openapi-markdown-output=FILENAME` to only generate a file
@@ -94,3 +95,4 @@ pytest --openapi=http://localhost:8000 \
 - ✅ Hybrid validation (strict + lenient modes)
 - ✅ Supports GET, POST, PUT, DELETE
 - ✅ Readable test reports
+- ✅ OpenAPI 3.0 and 3.1.x support (`$ref` resolution, `allOf`, nullable types, `const`)

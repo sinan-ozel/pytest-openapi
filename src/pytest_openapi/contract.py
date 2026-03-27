@@ -6,6 +6,7 @@ import re
 import requests
 
 from .case_generator import generate_test_cases_for_schema
+from .schema import primary_type, resolve_schema
 
 # Global list to store test reports
 test_reports = []
@@ -337,14 +338,18 @@ def get_test_report_markdown():
     return "\n".join(report_lines)
 
 
-def contains_invalid_enum_value(schema, data, path=""):
+def contains_invalid_enum_value(schema, data, path="", spec=None):
     """Check if data contains any invalid enum values according to
     schema.
 
+    Resolves $ref and allOf before inspecting enum constraints so that
+    schemas using components/schemas references are checked correctly.
+
     Args:
-        schema: OpenAPI schema object
+        schema: OpenAPI schema object (may contain $ref or allOf)
         data: Request/response data to check
-        path: Current path in object (for tracking)
+        path: Dot-separated path for tracking nested location
+        spec: Full OpenAPI spec dict for $ref resolution
 
     Returns:
         bool: True if data contains an invalid enum value, False otherwise
@@ -352,122 +357,163 @@ def contains_invalid_enum_value(schema, data, path=""):
     if not isinstance(schema, dict):
         return False
 
-    schema_type = schema.get("type")
+    schema = resolve_schema(spec, schema)
+    schema_type = primary_type(schema.get("type"))
 
-    # Check if this field has an enum and the value is invalid
     if "enum" in schema:
         allowed_values = schema["enum"]
-        # For scalar values (string, int, float, bool), check directly
-        if not isinstance(data, (dict, list)):
-            if data not in allowed_values:
-                return True
+        if not isinstance(data, (dict, list)) and data not in allowed_values:
+            return True
 
-    # Recursively check nested objects
     if schema_type == "object" and isinstance(data, dict):
         properties = schema.get("properties", {})
         for prop, prop_schema in properties.items():
             if prop in data:
+                child_path = f"{path}.{prop}" if path else prop
                 if contains_invalid_enum_value(
-                    prop_schema, data[prop], f"{path}.{prop}" if path else prop
+                    prop_schema, data[prop], child_path, spec
                 ):
                     return True
 
-    # Check array items
     elif schema_type == "array" and isinstance(data, list):
         items_schema = schema.get("items", {})
         for i, item in enumerate(data):
-            if contains_invalid_enum_value(items_schema, item, f"{path}[{i}]"):
+            if contains_invalid_enum_value(
+                items_schema, item, f"{path}[{i}]", spec
+            ):
                 return True
 
     return False
 
 
-def validate_against_schema(schema, actual, path=""):
+def validate_against_schema(schema, actual, path="", spec=None):
     """Validate actual response against JSON schema.
 
+    Supports OpenAPI 3.0.x and 3.1.x features:
+    - $ref resolution via components/schemas
+    - allOf schema composition
+    - oneOf / anyOf union validation
+    - const keyword
+    - type: ["string", "null"] nullable syntax (3.1.x)
+    - nullable: true (3.0.x)
+
     Args:
-        schema: JSON schema object
-        actual: Actual response data
-        path: Current path in object (for error messages)
+        schema: JSON schema object (may contain $ref or allOf)
+        actual: Actual response data to validate
+        path: Dot-separated path for error messages (e.g. "order.customer")
+        spec: Full OpenAPI spec dict for $ref resolution; None skips resolution
 
     Returns:
         tuple: (valid: bool, error_message: str or None)
     """
+    schema = resolve_schema(spec, schema)
     schema_type = schema.get("type")
+    path_prefix = f"{path}: " if path else ""
 
-    # Handle nullable fields (OpenAPI 3.0 uses "nullable": true,
-    # OpenAPI 3.1 uses type: ["string", "null"])
+    # ── const ─────────────────────────────────────────────────────────────────
+    if "const" in schema:
+        const_val = schema["const"]
+        if actual != const_val:
+            return (
+                False,
+                f"{path_prefix}Expected const value {const_val!r}, "
+                f"got {actual!r}",
+            )
+        return True, None
+
+    # ── oneOf ─────────────────────────────────────────────────────────────────
+    if "oneOf" in schema:
+        for sub in schema["oneOf"]:
+            valid, _ = validate_against_schema(sub, actual, path, spec)
+            if valid:
+                return True, None
+        return (
+            False,
+            f"{path_prefix}Value does not match any oneOf schema",
+        )
+
+    # ── anyOf ─────────────────────────────────────────────────────────────────
+    if "anyOf" in schema:
+        for sub in schema["anyOf"]:
+            valid, _ = validate_against_schema(sub, actual, path, spec)
+            if valid:
+                return True, None
+        return (
+            False,
+            f"{path_prefix}Value does not match any anyOf schema",
+        )
+
+    # ── nullable (OpenAPI 3.0 and 3.1) ───────────────────────────────────────
     is_nullable = schema.get("nullable", False)
     if isinstance(schema_type, list):
-        # OpenAPI 3.1 style: type: ["string", "null"]
         if "null" in schema_type and actual is None:
             return True, None
-        # Filter out "null" and get the actual type
         non_null_types = [t for t in schema_type if t != "null"]
         if len(non_null_types) == 1:
             schema_type = non_null_types[0]
         elif len(non_null_types) > 1:
-            # Multiple non-null types - try each one
             for possible_type in non_null_types:
-                temp_schema = schema.copy()
-                temp_schema["type"] = possible_type
-                valid, _ = validate_against_schema(temp_schema, actual, path)
+                temp_schema = {**schema, "type": possible_type}
+                valid, _ = validate_against_schema(
+                    temp_schema, actual, path, spec
+                )
                 if valid:
                     return True, None
             return (
                 False,
-                f"{path}: Value does not match any of the allowed "
+                f"{path_prefix}Value does not match any of the allowed "
                 f"types: {non_null_types}",
             )
     elif is_nullable and actual is None:
-        # OpenAPI 3.0 style: nullable: true
         return True, None
 
-    # Check enum values before type validation
+    # ── enum ──────────────────────────────────────────────────────────────────
     if "enum" in schema:
         allowed_values = schema["enum"]
         if actual not in allowed_values:
             return (
                 False,
-                f"{path}: Value '{actual}' is not one of the "
+                f"{path_prefix}Value {actual!r} is not one of the "
                 f"allowed enum values: {allowed_values}",
             )
 
-    # Check type
+    # ── type checks ───────────────────────────────────────────────────────────
     if schema_type == "object":
         if not isinstance(actual, dict):
             return (
                 False,
-                f"{path}: Expected object, got {type(actual).__name__}",
+                f"{path_prefix}Expected object, got {type(actual).__name__}",
             )
 
-        # Check required properties
         required = schema.get("required", [])
         for prop in required:
             if prop not in actual:
-                return False, f"{path}: Missing required property '{prop}'"
+                return (
+                    False,
+                    f"{path_prefix}Missing required property '{prop}'",
+                )
 
-        # Validate properties
         properties = schema.get("properties", {})
         for prop, prop_schema in properties.items():
             if prop in actual:
+                child_path = f"{path}.{prop}" if path else prop
                 valid, error = validate_against_schema(
-                    prop_schema,
-                    actual[prop],
-                    f"{path}.{prop}" if path else prop,
+                    prop_schema, actual[prop], child_path, spec
                 )
                 if not valid:
                     return False, error
 
     elif schema_type == "array":
         if not isinstance(actual, list):
-            return False, f"{path}: Expected array, got {type(actual).__name__}"
+            return (
+                False,
+                f"{path_prefix}Expected array, got {type(actual).__name__}",
+            )
 
-        # Validate items
         items_schema = schema.get("items", {})
         for i, item in enumerate(actual):
             valid, error = validate_against_schema(
-                items_schema, item, f"{path}[{i}]"
+                items_schema, item, f"{path}[{i}]", spec
             )
             if not valid:
                 return False, error
@@ -476,28 +522,28 @@ def validate_against_schema(schema, actual, path=""):
         if not isinstance(actual, str):
             return (
                 False,
-                f"{path}: Expected string, got {type(actual).__name__}",
+                f"{path_prefix}Expected string, got {type(actual).__name__}",
             )
 
     elif schema_type == "number":
         if not isinstance(actual, (int, float)):
             return (
                 False,
-                f"{path}: Expected number, got {type(actual).__name__}",
+                f"{path_prefix}Expected number, got {type(actual).__name__}",
             )
 
     elif schema_type == "integer":
         if not isinstance(actual, int) or isinstance(actual, bool):
             return (
                 False,
-                f"{path}: Expected integer, got {type(actual).__name__}",
+                f"{path_prefix}Expected integer, got {type(actual).__name__}",
             )
 
     elif schema_type == "boolean":
         if not isinstance(actual, bool):
             return (
                 False,
-                f"{path}: Expected boolean, got {type(actual).__name__}",
+                f"{path_prefix}Expected boolean, got {type(actual).__name__}",
             )
 
     return True, None
@@ -632,8 +678,45 @@ def compare_structure(expected, actual):
     return True, None
 
 
+def substitute_path_params(path, operation):
+    """Replace OpenAPI path parameter placeholders with default values.
+
+    When the plugin calls a path like ``/pets/{petId}`` it sends the literal
+    placeholder string which causes a 404 on any real server.  This helper
+    replaces each ``{name}`` with a sensible default derived from the
+    parameter's declared schema type so the request reaches a real handler.
+
+    Args:
+        path: Raw OpenAPI path string, e.g. ``/pets/{petId}``
+        operation: OpenAPI operation object that may contain a ``parameters``
+                   list
+
+    Returns:
+        str: Path with placeholders replaced, e.g. ``/pets/1``
+    """
+    params = {
+        p["name"]: p
+        for p in operation.get("parameters", [])
+        if p.get("in") == "path"
+    }
+
+    def _default(name):
+        param = params.get(name, {})
+        schema = param.get("schema", {})
+        schema_type = schema.get("type", "string")
+        if schema_type == "integer":
+            return "1"
+        if schema_type == "number":
+            return "1.0"
+        if schema_type == "boolean":
+            return "true"
+        return "test"
+
+    return re.sub(r"\{(\w+)\}", lambda m: _default(m.group(1)), path)
+
+
 def test_get_endpoint(
-    base_url, path, operation, strict_examples=True, timeout=10
+    base_url, path, operation, strict_examples=True, timeout=10, spec=None
 ):
     """Test a GET endpoint using the example from the OpenAPI spec.
 
@@ -643,11 +726,12 @@ def test_get_endpoint(
         operation: OpenAPI operation object
         strict_examples: If True, strictly match example responses;
             if False, only validate structure
+        spec: Full OpenAPI spec dict for $ref resolution
 
     Returns:
         tuple: (success: bool, error_message: str or None)
     """
-    url = f"{base_url}{path}"
+    url = f"{base_url}{substitute_path_params(path, operation)}"
 
     # Get the expected response from examples or generate from schema
     responses = operation.get("responses", {})
@@ -736,13 +820,13 @@ def test_get_endpoint(
         try:
             if response.text:
                 actual_response = response.json()
-        except Exception:
+        except ValueError:
             pass
 
         # Validate against the actual status code's schema
         if actual_response_schema:
             matches, error = validate_against_schema(
-                actual_response_schema, actual_response
+                actual_response_schema, actual_response, spec=spec
             )
         elif actual_expected_response:
             matches, error = compare_responses(
@@ -829,7 +913,7 @@ def test_get_endpoint(
     elif response_schema:
         # Schema-generated test: always use schema validation
         matches, error = validate_against_schema(
-            response_schema, actual_response
+            response_schema, actual_response, spec=spec
         )
     else:
         # Fallback to strict comparison
@@ -1022,11 +1106,8 @@ def test_post_endpoint(
         if is_negative_test:
             # Parse response
             try:
-                if response.text:
-                    actual_response = response.json()
-                else:
-                    actual_response = ""
-            except Exception:
+                actual_response = response.json() if response.text else ""
+            except ValueError:
                 actual_response = response.text
 
             # Should get 400 Bad Request or 422 Unprocessable Entity
@@ -1237,7 +1318,7 @@ def test_post_endpoint(
             try:
                 if response.text:
                     actual_response = response.json()
-            except Exception:
+            except ValueError:
                 pass
 
             # Validate against the actual status code's schema
@@ -1546,11 +1627,8 @@ def test_put_endpoint(
         if is_negative_test:
             # Parse response
             try:
-                if response.text:
-                    actual_response = response.json()
-                else:
-                    actual_response = ""
-            except Exception:
+                actual_response = response.json() if response.text else ""
+            except ValueError:
                 actual_response = response.text
 
             # Should get 400 Bad Request or 422 Unprocessable Entity
@@ -1644,7 +1722,7 @@ def test_put_endpoint(
             try:
                 if response.text:
                     actual_response = response.json()
-            except Exception:
+            except ValueError:
                 pass
 
             # Validate against the actual status code's schema
@@ -1786,7 +1864,7 @@ def test_put_endpoint(
 
 
 def test_delete_endpoint(
-    base_url, path, operation, strict_examples=True, timeout=10
+    base_url, path, operation, strict_examples=True, timeout=10, spec=None
 ):
     """Test a DELETE endpoint.
 
@@ -1917,7 +1995,7 @@ def test_delete_endpoint(
     if response.status_code == 200 and response.text:
         try:
             actual_response = response.json()
-        except Exception:
+        except ValueError:
             actual_response = response.text
 
     # In lenient mode, accept any documented status code
@@ -1939,13 +2017,13 @@ def test_delete_endpoint(
         try:
             if response.text:
                 actual_response = response.json()
-        except Exception:
+        except ValueError:
             pass
 
         # Validate against the actual status code's schema
         if actual_response_schema:
             matches, error = validate_against_schema(
-                actual_response_schema, actual_response
+                actual_response_schema, actual_response, spec=spec
             )
         elif actual_expected_response:
             matches, error = compare_responses(
@@ -2047,6 +2125,7 @@ def test_post_endpoint_single(
     test_origin,
     strict_examples=True,
     timeout=10,
+    spec=None,
 ):
     """Test a single POST request with a specific request body.
 
@@ -2137,7 +2216,7 @@ def test_post_endpoint_single(
     is_negative_test = False
     if request_schema:
         is_negative_test = contains_invalid_enum_value(
-            request_schema, request_body
+            request_schema, request_body, spec=spec
         )
 
     # Make the POST request
@@ -2167,7 +2246,7 @@ def test_post_endpoint_single(
                 actual_response = response.json()
             else:
                 actual_response = ""
-        except Exception:
+        except ValueError:
             actual_response = response.text
 
         if response.status_code in [400, 422]:
@@ -2348,12 +2427,12 @@ def test_post_endpoint_single(
         try:
             if response.text:
                 actual_response = response.json()
-        except Exception:
+        except ValueError:
             pass
 
         if actual_response_schema:
             matches, error = validate_against_schema(
-                actual_response_schema, actual_response
+                actual_response_schema, actual_response, spec=spec
             )
         elif actual_expected_response:
             matches, error = compare_responses(
@@ -2437,7 +2516,7 @@ def test_post_endpoint_single(
         )
     elif response_schema:
         matches, error = validate_against_schema(
-            response_schema, actual_response
+            response_schema, actual_response, spec=spec
         )
     else:
         matches, error = compare_responses(
@@ -2484,6 +2563,7 @@ def test_put_endpoint_single(
     test_origin,
     strict_examples=True,
     timeout=10,
+    spec=None,
 ):
     """Test a single PUT request with a specific request body.
 
@@ -2609,12 +2689,12 @@ def test_put_endpoint_single(
         try:
             if response.text:
                 actual_response = response.json()
-        except Exception:
+        except ValueError:
             pass
 
         if actual_response_schema:
             matches, error = validate_against_schema(
-                actual_response_schema, actual_response
+                actual_response_schema, actual_response, spec=spec
             )
         elif actual_expected_response:
             matches, error = compare_responses(
@@ -2698,7 +2778,7 @@ def test_put_endpoint_single(
         )
     elif response_schema:
         matches, error = validate_against_schema(
-            response_schema, actual_response
+            response_schema, actual_response, spec=spec
         )
     else:
         matches, error = compare_responses(
