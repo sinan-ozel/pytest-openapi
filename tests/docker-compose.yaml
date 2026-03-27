@@ -272,6 +272,71 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-components-ref-valid:
+    build:
+      context: test_servers/components_ref_valid
+      dockerfile: Dockerfile
+    image: mock-server-components-ref-valid:latest
+    ports:
+      - "8022:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-components-ref-type-mismatch:
+    build:
+      context: test_servers/components_ref_type_mismatch
+      dockerfile: Dockerfile
+    image: mock-server-components-ref-type-mismatch:latest
+    ports:
+      - "8023:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-allof-composition-valid:
+    build:
+      context: test_servers/allof_composition_valid
+      dockerfile: Dockerfile
+    image: mock-server-allof-composition-valid:latest
+    ports:
+      - "8024:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-petstore-components:
+    build:
+      context: test_servers/petstore_components
+      dockerfile: Dockerfile
+    image: mock-server-petstore-components:latest
+    ports:
+      - "8025:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-openapi311-features:
+    build:
+      context: test_servers/openapi311_features
+      dockerfile: Dockerfile
+    image: mock-server-openapi311-features:latest
+    ports:
+      - "8026:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..

@@ -95,9 +95,17 @@ pytest --openapi=http://localhost:8000 --openapi-no-strict-example-checking
 | Example-based | Yes | `--no-strict...` | Structure/type only |
 | Schema-generated | Any | Any | Schema validation (always) |
 
+## OpenAPI Version Support
+
+pytest-openapi validates responses against both OpenAPI 3.0.x and 3.1.x schemas:
+
+- **OpenAPI 3.0.x**: `nullable: true` fields accept `null` values
+- **OpenAPI 3.1.x**: `type: ["string", "null"]` multi-type arrays accept `null` values; `$ref` siblings are merged; `const` fixes a value
+- `allOf` compositions are merged before validation in both versions
+
 ## Philosophy
 
-pytest-openapi is **opinionated**: 
+pytest-openapi is **opinionated**:
 
 - Examples are **required** in your OpenAPI spec
 - This ensures documentation is complete and useful

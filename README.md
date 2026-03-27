@@ -36,7 +36,7 @@ pytest --openapi=http://localhost:8000 -v
 platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
 cachedir: .pytest_cache
 rootdir: /workspace
-plugins: openapi-0.2.1, depends-1.0.1, mock-3.15.1
+plugins: openapi-0.3.0, depends-1.0.1, mock-3.15.1
 collected 3 items
 created 2 items from openapi examples
 created 20 items generated from schema
@@ -131,10 +131,11 @@ Each OpenAPI test appears as an individual pytest test item.
 ✔️ Validates OpenAPI request/response definitions
 ✔️ Enforces schema field descriptions
 ✔️ Generates test cases from schemas, checks response codes and types in the response
-✔️ Tests the exanples
+✔️ Tests the examples
 ✔️ Tests **GET / POST / PUT / DELETE** endpoints
 ✔️ Compares live responses against examples
 ✔️ Produces a readable test report
+✔️ Supports OpenAPI 3.0 and **3.1.x** (nullable types, `const`, `$ref` siblings, `allOf`)
 
 
 # ▶️ Detailed Example

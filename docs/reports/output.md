@@ -129,6 +129,8 @@ Shows full request/response without truncation:
   }
 ```
 
+For **streaming endpoints** (`text/event-stream`, `application/x-ndjson`, `application/stream+json`), `-vvv` mode shows the collected chunks as a structured JSON array rather than a placeholder. SSE chunks are parsed from `data:` lines; NDJSON chunks are parsed line by line.
+
 ## Report Contents
 
 Each test records:

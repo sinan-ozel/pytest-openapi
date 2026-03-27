@@ -1,6 +1,9 @@
 """Generate test cases from OpenAPI schemas."""
 
+import re
 from itertools import product
+
+from .schema import primary_type, resolve_schema
 
 
 def generate_invalid_enum_value(schema):
@@ -49,11 +52,12 @@ def generate_invalid_enum_value(schema):
         return "invalid_value"
 
 
-def generate_string_test_cases(schema):
+def generate_string_test_cases(schema, valid_only=False):
     """Generate string test cases from schema.
 
     Args:
         schema: OpenAPI schema for a string field
+        valid_only: If True, omit invalid/negative test values
 
     Returns:
         list: List of test values
@@ -74,7 +78,7 @@ def generate_string_test_cases(schema):
             )
             print("   Install with: pip install exrex")
             test_cases.append("test-string")
-        except Exception as e:
+        except (re.error, ValueError, OverflowError) as e:
             print(
                 f"⚠️  Warning: Could not generate from pattern "
                 f"'{schema['pattern']}': {e}"
@@ -85,10 +89,11 @@ def generate_string_test_cases(schema):
     elif "enum" in schema:
         # Add all valid enum values
         test_cases.extend(schema["enum"])
-        # Add one invalid enum value as a negative test case
-        invalid_value = generate_invalid_enum_value(schema)
-        if invalid_value:
-            test_cases.append(invalid_value)
+        # Add one invalid enum value as a negative test case (unless valid_only)
+        if not valid_only:
+            invalid_value = generate_invalid_enum_value(schema)
+            if invalid_value:
+                test_cases.append(invalid_value)
 
     # Check for format
     elif "format" in schema:
@@ -176,12 +181,13 @@ def generate_string_test_cases(schema):
     return filtered if filtered else ["test-string"]
 
 
-def generate_integer_test_cases(schema, field_name="field"):
+def generate_integer_test_cases(schema, field_name="field", valid_only=False):
     """Generate integer test cases from schema.
 
     Args:
         schema: OpenAPI schema for an integer field
         field_name: Name of the field (for error messages)
+        valid_only: If True, omit invalid/negative test values
 
     Returns:
         tuple: (list of test values, optional warning message)
@@ -193,10 +199,11 @@ def generate_integer_test_cases(schema, field_name="field"):
     if "enum" in schema:
         # Add all valid enum values
         valid_cases = list(schema["enum"])
-        # Add one invalid enum value as a negative test case
-        invalid_value = generate_invalid_enum_value(schema)
-        if invalid_value:
-            valid_cases.append(invalid_value)
+        # Add one invalid enum value as a negative test case (unless valid_only)
+        if not valid_only:
+            invalid_value = generate_invalid_enum_value(schema)
+            if invalid_value:
+                valid_cases.append(invalid_value)
         return valid_cases, None
 
     # Get constraints
@@ -281,12 +288,13 @@ def generate_integer_test_cases(schema, field_name="field"):
     return sorted(set(test_cases)), warning
 
 
-def generate_number_test_cases(schema, field_name="field"):
+def generate_number_test_cases(schema, field_name="field", valid_only=False):
     """Generate number (float) test cases from schema.
 
     Args:
         schema: OpenAPI schema for a number field
         field_name: Name of the field (for error messages)
+        valid_only: If True, omit invalid/negative test values
 
     Returns:
         tuple: (list of test values, optional warning message)
@@ -298,10 +306,11 @@ def generate_number_test_cases(schema, field_name="field"):
     if "enum" in schema:
         # Add all valid enum values
         valid_cases = list(schema["enum"])
-        # Add one invalid enum value as a negative test case
-        invalid_value = generate_invalid_enum_value(schema)
-        if invalid_value:
-            valid_cases.append(invalid_value)
+        # Add one invalid enum value as a negative test case (unless valid_only)
+        if not valid_only:
+            invalid_value = generate_invalid_enum_value(schema)
+            if invalid_value:
+                valid_cases.append(invalid_value)
         return valid_cases, None
 
     # Get constraints
@@ -398,12 +407,13 @@ def generate_boolean_test_cases(schema):
     return [True, False]
 
 
-def generate_array_test_cases(schema, field_name="field"):
+def generate_array_test_cases(schema, field_name="field", spec=None):
     """Generate array test cases from schema.
 
     Args:
         schema: OpenAPI schema for an array field
         field_name: Name of the field (for error messages)
+        spec: Full OpenAPI spec dict for $ref resolution
 
     Returns:
         tuple: (list of test arrays, optional warning message)
@@ -414,7 +424,7 @@ def generate_array_test_cases(schema, field_name="field"):
 
     # Generate test cases for the item type
     item_test_cases, warning = generate_test_cases_for_schema(
-        items_schema, f"{field_name}[]"
+        items_schema, f"{field_name}[]", spec
     )
 
     arrays = []
@@ -438,12 +448,13 @@ def generate_array_test_cases(schema, field_name="field"):
     return arrays, warning
 
 
-def generate_object_test_cases(schema, field_name="field"):
+def generate_object_test_cases(schema, field_name="field", spec=None):
     """Generate object test cases from schema.
 
     Args:
         schema: OpenAPI schema for an object field
         field_name: Name of the field (for error messages)
+        spec: Full OpenAPI spec dict for $ref resolution
 
     Returns:
         tuple: (list of test objects, list of warnings)
@@ -452,11 +463,12 @@ def generate_object_test_cases(schema, field_name="field"):
 
     warnings = []
 
-    # Collect test cases for each property
+    # Collect test cases for each property (valid values only, to avoid
+    # generating request bodies that the server will reject with 400/422)
     prop_values = {}
     for prop_name, prop_schema in properties.items():
         prop_test_cases, warning = generate_test_cases_for_schema(
-            prop_schema, f"{field_name}.{prop_name}"
+            prop_schema, f"{field_name}.{prop_name}", spec, valid_only=True
         )
         if warning:
             warnings.append(warning)
@@ -486,30 +498,39 @@ def generate_object_test_cases(schema, field_name="field"):
     return combos, warnings
 
 
-def generate_test_cases_for_schema(schema, field_name="field"):
+def generate_test_cases_for_schema(
+    schema, field_name="field", spec=None, valid_only=False
+):
     """Generate test cases for any schema type.
 
     Args:
         schema: OpenAPI schema
         field_name: Name of the field (for error messages)
+        spec: Full OpenAPI spec dict for $ref resolution
+        valid_only: If True, omit invalid/negative test values
 
     Returns:
         tuple: (list of test values, optional warning message or
         list of warnings)
     """
-    schema_type = schema.get("type", "string")
+    schema = resolve_schema(spec, schema)
+    schema_type = primary_type(schema.get("type", "string")) or "string"
 
     if schema_type == "string":
-        return generate_string_test_cases(schema), None
+        return generate_string_test_cases(schema, valid_only=valid_only), None
     elif schema_type == "integer":
-        return generate_integer_test_cases(schema, field_name)
+        return generate_integer_test_cases(
+            schema, field_name, valid_only=valid_only
+        )
     elif schema_type == "number":
-        return generate_number_test_cases(schema, field_name)
+        return generate_number_test_cases(
+            schema, field_name, valid_only=valid_only
+        )
     elif schema_type == "boolean":
         return generate_boolean_test_cases(schema), None
     elif schema_type == "array":
-        return generate_array_test_cases(schema, field_name)
+        return generate_array_test_cases(schema, field_name, spec)
     elif schema_type == "object":
-        return generate_object_test_cases(schema, field_name)
+        return generate_object_test_cases(schema, field_name, spec)
     else:
         return ["test-value"], None

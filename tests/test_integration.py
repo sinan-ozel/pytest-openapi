@@ -1358,3 +1358,243 @@ def test_post_no_request_body_passes():
     assert (
         "test_openapi[POST /cancel/" in output
     ), f"Expected POST /cancel/ test item to be generated, got: {output}"
+
+
+# ---------------------------------------------------------------------------
+# OpenAPI 3.1.x / components / allOf stress-test servers
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_components_ref_valid_passes():
+    """Test that a spec using $ref to components/schemas passes when responses are correct.
+
+    This exercises the plugin's ability to dereference $ref pointers and validate
+    nested objects (Book -> Author) defined in components/schemas.
+    """
+    print("\n🔍 Testing components/$ref valid bookstore API...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-components-ref-valid:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Spec should be structurally valid
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected OpenAPI spec to pass structural validation, got: {output}"
+
+    # Both endpoints should appear as test items
+    assert (
+        "test_openapi[GET /catalog/books" in output
+        or "test_openapi[POST /catalog/books" in output
+    ), f"Expected /catalog/books test items, got: {output}"
+
+    assert (
+        result.returncode == 0
+    ), f"Expected all tests to pass for components_ref_valid, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_components_ref_type_mismatch_detected():
+    """Test that a type mismatch in a $ref-referenced schema is detected.
+
+    The bookstore spec uses $ref to Book/Author in components. The server returns
+    `year` as a string instead of integer. The plugin must dereference $ref to
+    catch this error.
+    """
+    print(
+        "\n🔍 Testing components/$ref type mismatch detection...", flush=True
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-components-ref-type-mismatch:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    # Should fail - type mismatch in field defined inside a $ref component
+    assert (
+        result.returncode != 0
+    ), f"Expected tests to fail due to type mismatch via $ref, got: {output}"
+
+    # Should mention the offending field or a type error
+    assert "year" in output or "type mismatch" in output.lower(), (
+        f"Expected error about 'year' field type mismatch, got: {output}"
+    )
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_allof_composition_valid_passes():
+    """Test that allOf schema composition validates correctly with correct responses.
+
+    The vehicle API uses allOf to extend a base Vehicle schema with
+    ElectricVehicle and GasVehicle. Responses include extra fields from the
+    composed schema. All responses are correct and should PASS.
+    """
+    print("\n🔍 Testing allOf composition valid vehicle API...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-allof-composition-valid:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected OpenAPI spec to pass structural validation, got: {output}"
+
+    assert (
+        "test_openapi[GET /vehicles" in output
+        or "test_openapi[POST /vehicles" in output
+    ), f"Expected /vehicles test items to appear, got: {output}"
+
+    assert (
+        result.returncode == 0
+    ), f"Expected all allOf composition tests to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_petstore_components_passes():
+    """Test the simplified Petstore API with full components/schemas usage.
+
+    Based on the canonical OpenAPI Petstore example. Uses $ref throughout,
+    path parameters, and multiple HTTP methods (GET, POST, DELETE).
+    All responses are correct and should PASS.
+    """
+    print("\n🔍 Testing Petstore API with components/schemas...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-petstore-components:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected OpenAPI spec to pass structural validation, got: {output}"
+
+    # GET /pets and POST /pets should both appear
+    assert (
+        "test_openapi[GET /pets" in output
+    ), f"Expected GET /pets test item, got: {output}"
+
+    assert (
+        "test_openapi[POST /pets" in output
+    ), f"Expected POST /pets test item, got: {output}"
+
+    assert (
+        result.returncode == 0
+    ), f"Expected all Petstore tests to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi311_nullable_types_pass():
+    """Test that OpenAPI 3.1.1 nullable type syntax is handled correctly.
+
+    The user profile API uses `type: ["string", "null"]` (the 3.1.x way to
+    express nullable fields). Responses include both string values and explicit
+    null values for those fields. Should PASS.
+    """
+    print(
+        "\n🔍 Testing OpenAPI 3.1.1 nullable type syntax (type: [string, null])...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-openapi311-features:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected OpenAPI 3.1.1 spec to pass structural validation, got: {output}"
+
+    # /version, /users endpoints should appear
+    assert (
+        "test_openapi[GET /version" in output
+        or "test_openapi[GET /users" in output
+    ), f"Expected /version or /users test items, got: {output}"
+
+    assert (
+        result.returncode == 0
+    ), f"Expected all OpenAPI 3.1.1 feature tests to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_openapi311_const_keyword_validated():
+    """Test that the OpenAPI 3.1.1 `const` keyword on the /version endpoint is checked.
+
+    The /version endpoint returns fields with `const` values ("1.0.0" and "3.1.1").
+    Should PASS because the server returns exactly those constant values.
+    """
+    print(
+        "\n🔍 Testing OpenAPI 3.1.1 const keyword on /version endpoint...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-openapi311-features:8000",
+            "-k",
+            "version",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+
+    assert (
+        "test_openapi[GET /version" in output
+    ), f"Expected GET /version test item, got: {output}"
+
+    assert (
+        result.returncode == 0
+    ), f"Expected /version const-keyword test to pass, got: {output}"

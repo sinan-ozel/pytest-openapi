@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-26
+
+### Added
+- **OpenAPI 3.1.x support** via a new `schema.py` module:
+  - `$ref` resolution with sibling keyword merging (required by OpenAPI 3.1.x semantics)
+  - `allOf` schema composition: properties and required lists from all sub-schemas are merged into a single flat schema
+  - Nullable types via `type: ["string", "null"]` (replaces the OpenAPI 3.0 `nullable: true` extension)
+  - `const` keyword support for fixed-value validation
+  - `primary_type()` helper that extracts the primary non-null type from a multi-type array
+- **Path parameter substitution for GET endpoints**: paths like `/users/{userId}` are now resolved to type-appropriate defaults (e.g. `/users/1` for integer params) before making requests. Previously only DELETE and POST/PUT had this behaviour.
+
 ### Fixed
 - In `-vvv` mode, streaming responses now show the actual collected response content instead of the opaque placeholder `[Streaming response: ...]`. SSE (`text/event-stream`) chunks are parsed from `data:` lines and NDJSON (`application/x-ndjson`, `application/stream+json`) chunks are parsed line by line; both are displayed as structured JSON arrays.
+- Schema-generated object test cases no longer include invalid enum values in individual property slots. Invalid values are still generated for simple (non-object) schemas but are excluded when building Cartesian-product combinations for object bodies, preventing false-positive 400 responses from invalidating generated tests.
+- Exception handling narrowed from bare `except Exception` to specific exception types (`ValueError`, `re.error`, `OverflowError`) in the schema-generation and JSON-parsing code paths.
 
 ## [0.2.2] - 2026-02-28
 
