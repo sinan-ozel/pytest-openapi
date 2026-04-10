@@ -337,6 +337,32 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-post-202-accepted:
+    build:
+      context: test_servers/post_202_accepted
+      dockerfile: Dockerfile
+    image: mock-server-post-202-accepted:latest
+    ports:
+      - "8027:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-post-202-returns-200:
+    build:
+      context: test_servers/post_202_returns_200
+      dockerfile: Dockerfile
+    image: mock-server-post-202-returns-200:latest
+    ports:
+      - "8028:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..

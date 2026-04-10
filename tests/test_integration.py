@@ -1596,3 +1596,99 @@ def test_openapi311_const_keyword_validated():
     assert (
         result.returncode == 0
     ), f"Expected /version const-keyword test to pass, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_post_202_accepted_passes():
+    """Test that a POST endpoint documented and returning 202 Accepted passes.
+
+    Regression test for the bug where the plugin required a 200 or 201 example
+    and failed with 'No example found for 200/201 response' even when the spec
+    correctly documented a 202 Accepted response.
+    """
+    print("\n🔍 Testing POST endpoint with 202 Accepted response...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-202-accepted:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode == 0
+    ), f"Expected 202 Accepted endpoints to pass, got: {output}"
+    assert (
+        "✅ OpenAPI spec validated successfully" in output
+    ), f"Expected validation success, got: {output}"
+    assert (
+        "test_openapi[POST /jobs" in output
+    ), f"Expected POST /jobs test item, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_get_202_accepted_passes():
+    """Test that a GET endpoint documented and returning 202 Accepted passes."""
+    print("\n🔍 Testing GET endpoint with 202 Accepted response...", flush=True)
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-202-accepted:8000",
+            "-k",
+            "jobs/",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode == 0
+    ), f"Expected GET 202 Accepted endpoint to pass, got: {output}"
+    assert (
+        "test_openapi[GET /jobs/" in output
+    ), f"Expected GET /jobs/{{job_id}} test item, got: {output}"
+
+
+@pytest.mark.depends(on=["test_openapi_flag_is_recognized"])
+def test_post_202_spec_but_server_returns_200_fails():
+    """Test that a POST endpoint documented as 202 but returning 200 is detected as a failure.
+
+    Regression test: the status check must respect what the spec documents.
+    When only 202 is documented, a server returning 200 is a contract violation
+    and should cause the test to fail.
+    """
+    print(
+        "\n🔍 Testing POST 202-documented endpoint that returns 200 (should fail)...",
+        flush=True,
+    )
+    time.sleep(0.5)
+
+    result = subprocess.run(
+        [
+            "pytest",
+            "--openapi=http://mock-server-post-202-returns-200:8000",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/app",
+    )
+
+    output = result.stdout + result.stderr
+    assert (
+        result.returncode != 0
+    ), f"Expected failure when server returns 200 but spec documents 202, got: {output}"
+    assert (
+        "202" in output or "200" in output
+    ), f"Expected error mentioning the status code mismatch, got: {output}"

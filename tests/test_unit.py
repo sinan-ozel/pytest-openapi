@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -388,3 +389,195 @@ def test_contains_invalid_enum_value():
 
     assert not contains_invalid_enum_value(schema_array, ["red", "blue"])
     assert contains_invalid_enum_value(schema_array, ["red", "yellow"])
+
+
+def _make_mock_response(status_code, json_body=None, text=""):
+    """Helper to create a mock requests.Response."""
+    mock = MagicMock()
+    mock.status_code = status_code
+    mock.text = text if json_body is None else json.dumps(json_body)
+    mock.headers = {"Content-Type": "application/json"}
+    mock.json.return_value = json_body
+    return mock
+
+
+def _post_operation_202():
+    """Return an OpenAPI operation object that documents a 202 response."""
+    return {
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/json": {
+                    "schema": {"type": "object"},
+                    "example": {"input": "value"},
+                }
+            },
+        },
+        "responses": {
+            "202": {
+                "description": "Accepted",
+                "content": {
+                    "application/json": {
+                        "example": {"status": "queued"},
+                    }
+                },
+            }
+        },
+    }
+
+
+def test_post_endpoint_single_accepts_202():
+    """test_post_endpoint_single should succeed when the spec and server both use 202."""
+    from pytest_openapi.contract import test_post_endpoint_single
+
+    mock_response = _make_mock_response(202, {"status": "queued"})
+    with patch(
+        "pytest_openapi.contract.make_request", return_value=mock_response
+    ):
+        success, error = test_post_endpoint_single(
+            base_url="http://fake",
+            path="/evaluate",
+            operation=_post_operation_202(),
+            request_body={"input": "value"},
+            test_origin="example",
+        )
+
+    assert success, f"Expected success for 202 response, got error: {error}"
+    assert error is None
+
+
+def test_post_endpoint_single_finds_202_example():
+    """When only a 202 response is documented, the plugin uses its example.
+
+    compare_responses checks keys and types but not scalar values, so a body
+    with matching structure passes even if the string values differ.  A genuine
+    failure (wrong status family like 4xx/5xx) still fails.
+    """
+    from pytest_openapi.contract import test_post_endpoint_single
+
+    # Server returns a 4xx — this should fail regardless of the spec status code
+    mock_response = _make_mock_response(400, None, text="Bad Request")
+    with patch(
+        "pytest_openapi.contract.make_request", return_value=mock_response
+    ):
+        success, error = test_post_endpoint_single(
+            base_url="http://fake",
+            path="/evaluate",
+            operation=_post_operation_202(),
+            request_body={"input": "value"},
+            test_origin="example",
+        )
+
+    assert not success
+    assert error is not None
+
+
+def test_post_endpoint_single_prefers_200_over_202():
+    """When both 200 and 202 are documented, 200 example takes priority."""
+    from pytest_openapi.contract import test_post_endpoint_single
+
+    operation = {
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/json": {
+                    "example": {"input": "value"},
+                }
+            },
+        },
+        "responses": {
+            "200": {
+                "description": "OK",
+                "content": {
+                    "application/json": {
+                        "example": {"result": "done"},
+                    }
+                },
+            },
+            "202": {
+                "description": "Accepted",
+                "content": {
+                    "application/json": {
+                        "example": {"status": "queued"},
+                    }
+                },
+            },
+        },
+    }
+
+    mock_response = _make_mock_response(200, {"result": "done"})
+    with patch(
+        "pytest_openapi.contract.make_request", return_value=mock_response
+    ):
+        success, error = test_post_endpoint_single(
+            base_url="http://fake",
+            path="/items",
+            operation=operation,
+            request_body={"input": "value"},
+            test_origin="example",
+        )
+
+    assert success, f"Expected success for 200 when both 200/202 documented: {error}"
+
+
+def test_get_endpoint_accepts_202():
+    """test_get_endpoint should succeed when the spec and server both use 202."""
+    from pytest_openapi.contract import test_get_endpoint
+
+    operation = {
+        "responses": {
+            "202": {
+                "description": "Accepted",
+                "content": {
+                    "application/json": {
+                        "example": {"status": "queued"},
+                    }
+                },
+            }
+        }
+    }
+
+    mock_response = _make_mock_response(202, {"status": "queued"})
+    with patch(
+        "pytest_openapi.contract.make_request", return_value=mock_response
+    ):
+        success, error = test_get_endpoint(
+            base_url="http://fake",
+            path="/status",
+            operation=operation,
+        )
+
+    assert success, f"Expected success for GET 202 response, got: {error}"
+
+
+def test_post_endpoint_single_no_202_example_fails():
+    """When no 200/201/202 example exists at all, the function should fail with a clear error."""
+    from pytest_openapi.contract import test_post_endpoint_single
+
+    operation = {
+        "requestBody": {
+            "required": True,
+            "content": {"application/json": {"example": {"x": 1}}},
+        },
+        "responses": {
+            "400": {
+                "description": "Bad Request",
+                "content": {
+                    "application/json": {
+                        "example": {"error": "bad input"},
+                    }
+                },
+            }
+        },
+    }
+
+    success, error = test_post_endpoint_single(
+        base_url="http://fake",
+        path="/items",
+        operation=operation,
+        request_body={"x": 1},
+        test_origin="example",
+    )
+
+    assert not success
+    assert "200/201/202" in error

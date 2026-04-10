@@ -735,8 +735,15 @@ def test_get_endpoint(
 
     # Get the expected response from examples or generate from schema
     responses = operation.get("responses", {})
-    response_200 = responses.get("200", {})
+    response_200 = (
+        responses.get("200", {})
+        or responses.get("201", {})
+        or responses.get("202", {})
+    )
     content = response_200.get("content", {})
+    expected_status = (
+        202 if "202" in responses else (201 if "201" in responses else 200)
+    )
 
     # Get all documented response status codes
     documented_statuses = set()
@@ -773,7 +780,7 @@ def test_get_endpoint(
     if expected_response is None:
         return (
             False,
-            "No example found for 200 response. Examples are required.",
+            "No example found for 200/201/202 response. Examples are required.",
         )
 
     # Make the GET request
@@ -798,7 +805,9 @@ def test_get_endpoint(
 
     # Check status code
     actual_response = (
-        response.json() if response.status_code == 200 else response.text
+        response.json()
+        if response.status_code in [200, 201, 202]
+        else response.text
     )
 
     # In lenient mode, accept any documented status code
@@ -841,7 +850,7 @@ def test_get_endpoint(
                 "GET",
                 path,
                 None,
-                200,
+                expected_status,
                 expected_response,
                 response.status_code,
                 actual_response,
@@ -856,7 +865,7 @@ def test_get_endpoint(
                 "GET",
                 path,
                 None,
-                200,
+                expected_status,
                 expected_response,
                 response.status_code,
                 actual_response,
@@ -873,7 +882,7 @@ def test_get_endpoint(
             "GET",
             path,
             None,
-            200,
+            expected_status,
             expected_response,
             response.status_code,
             actual_response,
@@ -884,16 +893,16 @@ def test_get_endpoint(
         )
         return True, None
 
-    if response.status_code != 200:
+    if response.status_code != expected_status:
         error_msg = (
-            f"Expected status 200, got {response.status_code}. "
+            f"Expected status {expected_status}, got {response.status_code}. "
             f"Response: {response.text}"
         )
         log_test_result(
             "GET",
             path,
             None,
-            200,
+            expected_status,
             expected_response,
             response.status_code,
             actual_response,
@@ -1895,9 +1904,9 @@ def test_delete_endpoint(
     expected_status = None
     expected_body = None
 
-    for status_code in ["200", "204", "404"]:
+    for status_code in ["200", "201", "202", "204", "404"]:
         resp_obj = responses.get(status_code, {})
-        if status_code in ["200", "204"]:
+        if status_code in ["200", "201", "202", "204"]:
             expected_status = int(status_code)
         content = resp_obj.get("content", {})
         for media_type, media_obj in content.items():
@@ -2149,13 +2158,19 @@ def test_post_endpoint_single(
 
     # Get expected response
     responses = operation.get("responses", {})
-    response_200 = responses.get("200", {}) or responses.get("201", {})
+    response_200 = (
+        responses.get("200", {})
+        or responses.get("201", {})
+        or responses.get("202", {})
+    )
     content = response_200.get("content", {})
 
     expected_response = None
     response_schema = None
     response_is_example_based = False
-    expected_status = 201 if "201" in responses else 200
+    expected_status = (
+        202 if "202" in responses else (201 if "201" in responses else 200)
+    )
 
     # Get all documented response status codes
     documented_statuses = set()
@@ -2185,7 +2200,7 @@ def test_post_endpoint_single(
     if expected_response is None:
         return (
             False,
-            "No example found for 200/201 response. Examples are required.",
+            "No example found for 200/201/202 response. Examples are required.",
         )
 
     # Resolve path parameters using response example values
@@ -2320,8 +2335,8 @@ def test_post_endpoint_single(
 
     if is_streaming:
         # Streaming responses are valid - we can't validate their
-        # content in the same way. Just verify we got a 200/201.
-        if response.status_code in [200, 201]:
+        # content in the same way. Just verify we got a 200/201/202.
+        if response.status_code in [200, 201, 202]:
             log_test_result(
                 "POST",
                 path,
@@ -2369,8 +2384,8 @@ def test_post_endpoint_single(
 
     if is_streaming:
         # Streaming responses are valid - we can't validate their
-        # content in the same way. Just verify we got a 200/201.
-        if response.status_code in [200, 201]:
+        # content in the same way. Just verify we got a 200/201/202.
+        if response.status_code in [200, 201, 202]:
             log_test_result(
                 "POST",
                 path,
@@ -2407,7 +2422,9 @@ def test_post_endpoint_single(
 
     # Check status code
     actual_response = (
-        response.json() if response.status_code in [200, 201] else response.text
+        response.json()
+        if response.status_code in [200, 201, 202]
+        else response.text
     )
 
     # In lenient mode, accept any documented status code
@@ -2489,9 +2506,14 @@ def test_post_endpoint_single(
         )
         return True, None
 
-    if response.status_code not in [200, 201]:
+    valid_success_statuses = {
+        s for s in documented_statuses if s in {200, 201, 202}
+    }
+    if not valid_success_statuses:
+        valid_success_statuses = {200, 201, 202}
+    if response.status_code not in valid_success_statuses:
         error_msg = (
-            f"Expected status 200/201, got {response.status_code}. "
+            f"Expected status {expected_status}, got {response.status_code}. "
             f"Response: {response.text}"
         )
         log_test_result(
@@ -2585,13 +2607,20 @@ def test_put_endpoint_single(
     """
     # Get expected response first to extract path parameter values
     responses = operation.get("responses", {})
-    response_200 = responses.get("200", {}) or responses.get("204", {})
+    response_200 = (
+        responses.get("200", {})
+        or responses.get("201", {})
+        or responses.get("202", {})
+        or responses.get("204", {})
+    )
     content = response_200.get("content", {})
 
     expected_response = None
     response_schema = None
     response_is_example_based = False
-    expected_status = 200
+    expected_status = (
+        202 if "202" in responses else (201 if "201" in responses else 200)
+    )
 
     # Get all documented response status codes
     documented_statuses = set()
@@ -2621,7 +2650,7 @@ def test_put_endpoint_single(
     if expected_response is None:
         return (
             False,
-            "No example found for 200 response. Examples are required.",
+            "No example found for 200/201/202 response. Examples are required.",
         )
 
     # Resolve path parameters with values from the response example
@@ -2669,7 +2698,9 @@ def test_put_endpoint_single(
 
     # Check status code
     actual_response = (
-        response.json() if response.status_code == 200 else response.text
+        response.json()
+        if response.status_code in [200, 201, 202]
+        else response.text
     )
 
     # In lenient mode, accept any documented status code
@@ -2751,9 +2782,14 @@ def test_put_endpoint_single(
         )
         return True, None
 
-    if response.status_code != 200:
+    valid_success_statuses = {
+        s for s in documented_statuses if s in {200, 201, 202}
+    }
+    if not valid_success_statuses:
+        valid_success_statuses = {200, 201, 202}
+    if response.status_code not in valid_success_statuses:
         error_msg = (
-            f"Expected status 200, got {response.status_code}. "
+            f"Expected status {expected_status}, got {response.status_code}. "
             f"Response: {response.text}"
         )
         log_test_result(
