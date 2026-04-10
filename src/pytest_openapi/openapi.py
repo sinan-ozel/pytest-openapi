@@ -196,18 +196,37 @@ def validate_openapi_spec(base_url, timeout=10):
     """
     openapi_url = f"{base_url}/openapi.json"
 
-    # Check 1: Fetch OpenAPI spec
-    try:
-        response = requests.get(openapi_url, timeout=timeout)
-        response.raise_for_status()
-        spec = response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"\n❌ ERROR: Could not fetch OpenAPI spec from {openapi_url}")
-        print(f"   Reason: {e}")
-        sys.exit(1)
-    except ValueError as e:
-        print(f"\n❌ ERROR: Invalid JSON in OpenAPI spec from {openapi_url}")
-        print(f"   Reason: {e}")
+    # Check 1: Fetch OpenAPI spec (with up to 3 retries)
+    max_attempts = 4
+    last_error = None
+    spec = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = requests.get(openapi_url, timeout=timeout)
+            response.raise_for_status()
+            spec = response.json()
+            break
+        except requests.exceptions.RequestException as e:
+            last_error = e
+            if attempt < max_attempts:
+                print(
+                    f"\n⚠️  Attempt {attempt}/{max_attempts} failed"
+                    f" fetching {openapi_url}: {e}. Retrying..."
+                )
+        except ValueError as e:
+            last_error = e
+            break
+    if spec is None:
+        if isinstance(last_error, ValueError):
+            print(
+                f"\n❌ ERROR: Invalid JSON in OpenAPI spec from {openapi_url}"
+            )
+        else:
+            print(
+                f"\n❌ ERROR: Could not fetch OpenAPI spec from {openapi_url}"
+                f" after {max_attempts} attempts"
+            )
+        print(f"   Reason: {last_error}")
         sys.exit(1)
     # TODO: Add JsonDecodeError handling
 

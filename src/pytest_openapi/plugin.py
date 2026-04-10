@@ -88,15 +88,30 @@ def pytest_configure(config):
         # Run validation checks
         validate_openapi_spec(base_url, timeout=openapi_timeout)
 
-        # Fetch the OpenAPI spec
-        try:
-            response = requests.get(
-                f"{base_url}/openapi.json", timeout=openapi_timeout
+        # Fetch the OpenAPI spec (with up to 3 retries)
+        spec = None
+        last_exc = None
+        for attempt in range(1, 5):
+            try:
+                response = requests.get(
+                    f"{base_url}/openapi.json", timeout=openapi_timeout
+                )
+                response.raise_for_status()
+                spec = response.json()
+                break
+            except (requests.exceptions.RequestException, ValueError) as e:
+                last_exc = e
+                if attempt < 4:
+                    print(
+                        f"\n⚠️  Attempt {attempt}/4 failed fetching"
+                        f" OpenAPI spec: {e}. Retrying..."
+                    )
+        if spec is None:
+            pytest.exit(
+                f"\n❌ Failed to fetch OpenAPI spec after 4 attempts:"
+                f" {last_exc}",
+                returncode=1,
             )
-            response.raise_for_status()
-            spec = response.json()
-        except (requests.exceptions.RequestException, ValueError) as e:
-            pytest.exit(f"\n❌ Failed to fetch OpenAPI spec: {e}", returncode=1)
 
         # Reset server state if /reset endpoint exists (for testing)
         try:

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Retry logic for fetching `/openapi.json`: the plugin now retries up to 3 times (4 total attempts) before failing, with a warning printed on each failed attempt.
+
 ## [0.3.0] - 2026-03-26
 
 ### Added
