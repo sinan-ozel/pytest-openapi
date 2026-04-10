@@ -1606,7 +1606,9 @@ def test_post_202_accepted_passes():
     and failed with 'No example found for 200/201 response' even when the spec
     correctly documented a 202 Accepted response.
     """
-    print("\n🔍 Testing POST endpoint with 202 Accepted response...", flush=True)
+    print(
+        "\n🔍 Testing POST endpoint with 202 Accepted response...", flush=True
+    )
     time.sleep(0.5)
 
     result = subprocess.run(

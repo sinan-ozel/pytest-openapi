@@ -517,7 +517,9 @@ def test_post_endpoint_single_prefers_200_over_202():
             test_origin="example",
         )
 
-    assert success, f"Expected success for 200 when both 200/202 documented: {error}"
+    assert (
+        success
+    ), f"Expected success for 200 when both 200/202 documented: {error}"
 
 
 def test_get_endpoint_accepts_202():
