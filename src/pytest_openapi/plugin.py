@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 
 import pytest
 import requests
@@ -64,6 +65,26 @@ def pytest_addoption(parser):
             " this will be ignored"
         ),
     )
+    group.addoption(
+        "--openapi-retries",
+        action="store",
+        metavar="N",
+        default=3,
+        help=(
+            "Number of times to retry fetching /openapi.json on failure"
+            " (default: 3)"
+        ),
+    )
+    group.addoption(
+        "--openapi-retry-wait",
+        action="store",
+        metavar="SECONDS",
+        default=1.0,
+        help=(
+            "Seconds to wait between /openapi.json fetch retries"
+            " (default: 1.0)"
+        ),
+    )
 
 
 def pytest_configure(config):
@@ -84,14 +105,22 @@ def pytest_configure(config):
         no_stdout = config.getoption("--openapi-no-stdout")
         ignore_pattern = config.getoption("--openapi-ignore")
         openapi_timeout = float(config.getoption("--openapi-timeout"))
+        openapi_retries = int(config.getoption("--openapi-retries"))
+        openapi_retry_wait = float(config.getoption("--openapi-retry-wait"))
+        max_attempts = openapi_retries + 1
 
         # Run validation checks
-        validate_openapi_spec(base_url, timeout=openapi_timeout)
+        validate_openapi_spec(
+            base_url,
+            timeout=openapi_timeout,
+            retries=openapi_retries,
+            retry_wait=openapi_retry_wait,
+        )
 
-        # Fetch the OpenAPI spec (with up to 3 retries)
+        # Fetch the OpenAPI spec
         spec = None
         last_exc = None
-        for attempt in range(1, 5):
+        for attempt in range(1, max_attempts + 1):
             try:
                 response = requests.get(
                     f"{base_url}/openapi.json", timeout=openapi_timeout
@@ -101,15 +130,17 @@ def pytest_configure(config):
                 break
             except (requests.exceptions.RequestException, ValueError) as e:
                 last_exc = e
-                if attempt < 4:
+                if attempt < max_attempts:
                     print(
-                        f"\n⚠️  Attempt {attempt}/4 failed fetching"
-                        f" OpenAPI spec: {e}. Retrying..."
+                        f"\n⚠️  Attempt {attempt}/{max_attempts} failed fetching"
+                        f" OpenAPI spec: {e}. Retrying in"
+                        f" {openapi_retry_wait}s..."
                     )
+                    time.sleep(openapi_retry_wait)
         if spec is None:
             pytest.exit(
-                f"\n❌ Failed to fetch OpenAPI spec after 4 attempts:"
-                f" {last_exc}",
+                f"\n❌ Failed to fetch OpenAPI spec after {max_attempts}"
+                f" attempts: {last_exc}",
                 returncode=1,
             )
 

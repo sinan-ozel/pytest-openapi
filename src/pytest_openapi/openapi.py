@@ -1,6 +1,7 @@
 """OpenAPI specification validation and parsing."""
 
 import sys
+import time
 
 import requests
 
@@ -178,7 +179,7 @@ def check_endpoint_schema_descriptions(method, path, operation):
     return errors
 
 
-def validate_openapi_spec(base_url, timeout=10):
+def validate_openapi_spec(base_url, timeout=10, retries=3, retry_wait=1.0):
     """Validate that the OpenAPI spec is available and meets
     requirements.
 
@@ -190,14 +191,17 @@ def validate_openapi_spec(base_url, timeout=10):
 
     Args:
         base_url: Base URL of the API server
+        timeout: HTTP request timeout in seconds
+        retries: Number of retry attempts after the first failure (default: 3)
+        retry_wait: Seconds to wait between retries (default: 1.0)
 
     Raises:
         SystemExit: If validation fails
     """
     openapi_url = f"{base_url}/openapi.json"
+    max_attempts = retries + 1
 
-    # Check 1: Fetch OpenAPI spec (with up to 3 retries)
-    max_attempts = 4
+    # Check 1: Fetch OpenAPI spec
     last_error = None
     spec = None
     for attempt in range(1, max_attempts + 1):
@@ -211,8 +215,10 @@ def validate_openapi_spec(base_url, timeout=10):
             if attempt < max_attempts:
                 print(
                     f"\n⚠️  Attempt {attempt}/{max_attempts} failed"
-                    f" fetching {openapi_url}: {e}. Retrying..."
+                    f" fetching {openapi_url}: {e}."
+                    f" Retrying in {retry_wait}s..."
                 )
+                time.sleep(retry_wait)
         except ValueError as e:
             last_error = e
             break
@@ -228,7 +234,6 @@ def validate_openapi_spec(base_url, timeout=10):
             )
         print(f"   Reason: {last_error}")
         sys.exit(1)
-    # TODO: Add JsonDecodeError handling
 
     # Validate the spec structure
     if "paths" not in spec:
