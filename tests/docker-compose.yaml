@@ -363,6 +363,110 @@ services:
           cpus: '0.1'
           memory: 128M
 
+  mock-server-email-format-validation:
+    build:
+      context: test_servers/email_format_validation
+      dockerfile: Dockerfile
+    image: mock-server-email-format-validation:latest
+    ports:
+      - "8029:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-email-format-no-message:
+    build:
+      context: test_servers/email_format_no_message
+      dockerfile: Dockerfile
+    image: mock-server-email-format-no-message:latest
+    ports:
+      - "8030:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-uri-format-validation:
+    build:
+      context: test_servers/uri_format_validation
+      dockerfile: Dockerfile
+    image: mock-server-uri-format-validation:latest
+    ports:
+      - "8031:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-uuid-format-validation:
+    build:
+      context: test_servers/uuid_format_validation
+      dockerfile: Dockerfile
+    image: mock-server-uuid-format-validation:latest
+    ports:
+      - "8032:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-ipv4-format-validation:
+    build:
+      context: test_servers/ipv4_format_validation
+      dockerfile: Dockerfile
+    image: mock-server-ipv4-format-validation:latest
+    ports:
+      - "8033:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-ipv6-format-validation:
+    build:
+      context: test_servers/ipv6_format_validation
+      dockerfile: Dockerfile
+    image: mock-server-ipv6-format-validation:latest
+    ports:
+      - "8034:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-hostname-format-validation:
+    build:
+      context: test_servers/hostname_format_validation
+      dockerfile: Dockerfile
+    image: mock-server-hostname-format-validation:latest
+    ports:
+      - "8035:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  mock-server-url-port-validation:
+    build:
+      context: test_servers/url_port_validation
+      dockerfile: Dockerfile
+    image: mock-server-url-port-validation:latest
+    ports:
+      - "8036:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
   test:
     build:
       context: ..

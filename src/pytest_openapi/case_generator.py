@@ -5,6 +5,21 @@ from itertools import product
 
 from .schema import primary_type, resolve_schema
 
+_INVALID_FORMAT_VALUES = {
+    "email": ["user name@domain.com",
+              "user@@double.com",
+              "user;name@domain.com"
+             ],
+    "uri": ["not-a-uri", "://missing-host"],
+    "url": ["not-a-url", "://missing-host"],
+    "ipv4": ["999.999.999.999", "1.2.3"],
+    "ip": ["999.999.999.999", "1.2.3"],
+    "ipv6": ["gggg::1", "not-ipv6"],
+    "hostname": ["-invalid.start.com", "has space.com"],
+    "idn-hostname": ["-invalid.start.com", "has space.com"],
+    "uuid": ["not-a-uuid", "xxxxxxxx-not-a-valid-uuid"],
+}
+
 
 def generate_invalid_enum_value(schema):
     """Generate an invalid value for an enum field.
@@ -178,7 +193,16 @@ def generate_string_test_cases(schema, valid_only=False):
             target_length = min_length + 5
         filtered.append("a" * target_length)
 
-    return filtered if filtered else ["test-string"]
+    result = filtered if filtered else ["test-string"]
+
+    # Append invalid-format values for negative tests (not subject to length
+    # constraints — they must be recognisably broken to trigger server-side 400)
+    if not valid_only and "format" in schema:
+        fmt = schema["format"]
+        if fmt in _INVALID_FORMAT_VALUES:
+            result = result + _INVALID_FORMAT_VALUES[fmt]
+
+    return result
 
 
 def generate_integer_test_cases(schema, field_name="field", valid_only=False):
@@ -460,6 +484,7 @@ def generate_object_test_cases(schema, field_name="field", spec=None):
         tuple: (list of test objects, list of warnings)
     """
     properties = schema.get("properties", {})
+    required_props = set(schema.get("required", []))
 
     warnings = []
 
@@ -494,6 +519,21 @@ def generate_object_test_cases(schema, field_name="field", spec=None):
     # If no combos generated, fall back to one empty object
     if not combos:
         combos = [{}]
+
+    # Append one format-invalid object per REQUIRED format-constrained property.
+    # Required fields must always be present and are the most likely to be
+    # server-validated; non-required format fields are skipped to keep the
+    # test-case count predictable for servers that don't validate format.
+    base = combos[0]
+    for prop_name, prop_schema in properties.items():
+        if prop_name not in required_props:
+            continue
+        resolved = resolve_schema(spec, prop_schema)
+        fmt = resolved.get("format")
+        if fmt and fmt in _INVALID_FORMAT_VALUES:
+            invalid_obj = dict(base)
+            invalid_obj[prop_name] = _INVALID_FORMAT_VALUES[fmt][0]
+            combos.append(invalid_obj)
 
     return combos, warnings
 

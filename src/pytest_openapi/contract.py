@@ -5,7 +5,7 @@ import re
 
 import requests
 
-from .case_generator import generate_test_cases_for_schema
+from .case_generator import _INVALID_FORMAT_VALUES, generate_test_cases_for_schema
 from .schema import primary_type, resolve_schema
 
 # Global list to store test reports
@@ -379,6 +379,66 @@ def contains_invalid_enum_value(schema, data, path="", spec=None):
         items_schema = schema.get("items", {})
         for i, item in enumerate(data):
             if contains_invalid_enum_value(
+                items_schema, item, f"{path}[{i}]", spec
+            ):
+                return True
+
+    return False
+
+
+def _has_nonempty_string_value(data):
+    """Return True if data contains at least one non-whitespace string."""
+    if isinstance(data, str):
+        return bool(data.strip())
+    if isinstance(data, dict):
+        return any(_has_nonempty_string_value(v) for v in data.values())
+    if isinstance(data, list):
+        return any(_has_nonempty_string_value(item) for item in data)
+    return False
+
+
+def contains_invalid_format_value(schema, data, path="", spec=None):
+    """Check if data contains any invalid format values according to schema.
+
+    Walks the schema/data tree and returns True when a string field annotated
+    with a known format (email, uri, ipv4, ipv6, hostname, uuid, …) holds one
+    of the deliberately broken values from _INVALID_FORMAT_VALUES.
+
+    Args:
+        schema: OpenAPI schema object (may contain $ref or allOf)
+        data: Request/response data to check
+        path: Dot-separated path for tracking nested location
+        spec: Full OpenAPI spec dict for $ref resolution
+
+    Returns:
+        bool: True if data contains an invalid format value, False otherwise
+    """
+    if not isinstance(schema, dict):
+        return False
+
+    schema = resolve_schema(spec, schema)
+    schema_type = primary_type(schema.get("type"))
+
+    if schema_type == "string" and "format" in schema:
+        fmt = schema["format"]
+        if fmt in _INVALID_FORMAT_VALUES and isinstance(data, str):
+            if data in _INVALID_FORMAT_VALUES[fmt]:
+                return True
+
+    if schema_type == "object" and isinstance(data, dict):
+        properties = schema.get("properties", {})
+        for prop, prop_schema in properties.items():
+            if prop in data:
+                child_path = f"{path}.{prop}" if path else prop
+                if contains_invalid_format_value(
+                    prop_schema, data[prop], child_path, spec
+                ):
+                    return True
+
+    elif schema_type == "array" and isinstance(data, list):
+        items_schema = schema.get("items", {})
+        for i, item in enumerate(data):
+            if contains_invalid_format_value(
                 items_schema, item, f"{path}[{i}]", spec
             ):
                 return True
@@ -1087,6 +1147,10 @@ def test_post_endpoint(
             is_negative_test = contains_invalid_enum_value(
                 request_schema, request_test_case
             )
+            if not is_negative_test and 400 in documented_statuses:
+                is_negative_test = contains_invalid_format_value(
+                    request_schema, request_test_case
+                )
 
         # Make the POST request
         try:
@@ -1111,7 +1175,7 @@ def test_post_endpoint(
             errors.append(error_msg)
             continue
 
-        # If this is a negative test (invalid enum), expect 400
+        # If this is a negative test (invalid value), expect 400
         if is_negative_test:
             # Parse response
             try:
@@ -1121,13 +1185,34 @@ def test_post_endpoint(
 
             # Should get 400 Bad Request or 422 Unprocessable Entity
             if response.status_code in [400, 422]:
-                # Success - invalid enum was properly rejected
+                if not _has_nonempty_string_value(actual_response):
+                    error_msg = (
+                        f"Got {response.status_code} for invalid input but "
+                        "the response body contains no descriptive error "
+                        "message. The server must return a human-readable "
+                        "explanation."
+                    )
+                    log_test_result(
+                        "POST",
+                        path,
+                        request_test_case,
+                        400,
+                        "400/422 with descriptive message",
+                        response.status_code,
+                        actual_response,
+                        False,
+                        error_msg,
+                        test_origin,
+                        documented_statuses=documented_statuses,
+                    )
+                    errors.append(error_msg)
+                    continue
                 log_test_result(
                     "POST",
                     path,
                     request_test_case,
                     400,
-                    "400/422 (invalid enum value)",
+                    "400/422 (invalid value)",
                     response.status_code,
                     actual_response,
                     True,
@@ -1139,9 +1224,9 @@ def test_post_endpoint(
             elif response.status_code >= 500:
                 # Server error - this is bad, should have returned 400/422
                 error_msg = (
-                    f"Expected 400/422 for invalid enum value, got "
+                    f"Expected 400/422 for invalid value, got "
                     f"{response.status_code} (server error). Server "
-                    "should validate enum values and return 400 or "
+                    "should validate input and return 400 or "
                     "422, not 5xx."
                 )
                 log_test_result(
@@ -1149,7 +1234,7 @@ def test_post_endpoint(
                     path,
                     request_test_case,
                     400,
-                    "400/422 (invalid enum value)",
+                    "400/422 (invalid value)",
                     response.status_code,
                     actual_response,
                     False,
@@ -1160,12 +1245,12 @@ def test_post_endpoint(
                 errors.append(error_msg)
                 continue
             else:
-                # Got 200/201 or other status
-                # Invalid enum should have been rejected
+                # Got 200/201 or other status — invalid value should have been
+                # rejected
                 error_msg = (
-                    f"Expected 400 or 422 for invalid enum value, got "
+                    f"Expected 400 or 422 for invalid value, got "
                     f"{response.status_code}. Server should validate "
-                    "enum values and return 400 Bad Request or "
+                    "input and return 400 Bad Request or "
                     "422 Unprocessable Entity."
                 )
                 log_test_result(
@@ -1173,7 +1258,7 @@ def test_post_endpoint(
                     path,
                     request_test_case,
                     400,
-                    "400 Bad Request (invalid enum value)",
+                    "400 Bad Request (invalid value)",
                     response.status_code,
                     actual_response,
                     False,
@@ -1608,6 +1693,10 @@ def test_put_endpoint(
             is_negative_test = contains_invalid_enum_value(
                 request_schema, request_test_case
             )
+            if not is_negative_test and 400 in documented_statuses:
+                is_negative_test = contains_invalid_format_value(
+                    request_schema, request_test_case
+                )
 
         # Make the PUT request
         try:
@@ -1632,7 +1721,7 @@ def test_put_endpoint(
             errors.append(error_msg)
             continue
 
-        # If this is a negative test (invalid enum), expect 400
+        # If this is a negative test (invalid value), expect 400
         if is_negative_test:
             # Parse response
             try:
@@ -1642,13 +1731,34 @@ def test_put_endpoint(
 
             # Should get 400 Bad Request or 422 Unprocessable Entity
             if response.status_code in [400, 422]:
-                # Success - invalid enum was properly rejected
+                if not _has_nonempty_string_value(actual_response):
+                    error_msg = (
+                        f"Got {response.status_code} for invalid input but "
+                        "the response body contains no descriptive error "
+                        "message. The server must return a human-readable "
+                        "explanation."
+                    )
+                    log_test_result(
+                        "PUT",
+                        resolved_path,
+                        request_test_case,
+                        400,
+                        "400/422 with descriptive message",
+                        response.status_code,
+                        actual_response,
+                        False,
+                        error_msg,
+                        test_origin,
+                        documented_statuses=documented_statuses,
+                    )
+                    errors.append(error_msg)
+                    continue
                 log_test_result(
                     "PUT",
                     resolved_path,
                     request_test_case,
                     400,
-                    "400/422 (invalid enum value)",
+                    "400/422 (invalid value)",
                     response.status_code,
                     actual_response,
                     True,
@@ -1658,11 +1768,10 @@ def test_put_endpoint(
                 )
                 continue
             elif response.status_code >= 500:
-                # Server error - this is bad, should have returned 400/422
                 error_msg = (
-                    f"Expected 400/422 for invalid enum value, got "
+                    f"Expected 400/422 for invalid value, got "
                     f"{response.status_code} (server error). Server "
-                    "should validate enum values and return 400 or "
+                    "should validate input and return 400 or "
                     "422, not 5xx."
                 )
                 log_test_result(
@@ -1670,7 +1779,7 @@ def test_put_endpoint(
                     resolved_path,
                     request_test_case,
                     400,
-                    "400/422 (invalid enum value)",
+                    "400/422 (invalid value)",
                     response.status_code,
                     actual_response,
                     False,
@@ -1681,12 +1790,10 @@ def test_put_endpoint(
                 errors.append(error_msg)
                 continue
             else:
-                # Got 200 or other status - invalid enum should have
-                # been rejected
                 error_msg = (
-                    f"Expected 400 or 422 for invalid enum value, got "
+                    f"Expected 400 or 422 for invalid value, got "
                     f"{response.status_code}. Server should validate "
-                    "enum values and return 400 Bad Request or "
+                    "input and return 400 Bad Request or "
                     "422 Unprocessable Entity."
                 )
                 log_test_result(
@@ -1694,7 +1801,7 @@ def test_put_endpoint(
                     resolved_path,
                     request_test_case,
                     400,
-                    "400 Bad Request (invalid enum value)",
+                    "400 Bad Request (invalid value)",
                     response.status_code,
                     actual_response,
                     False,
@@ -2233,6 +2340,10 @@ def test_post_endpoint_single(
         is_negative_test = contains_invalid_enum_value(
             request_schema, request_body, spec=spec
         )
+        if not is_negative_test and 400 in documented_statuses:
+            is_negative_test = contains_invalid_format_value(
+                request_schema, request_body, spec=spec
+            )
 
     # Make the POST request
     try:
@@ -2265,12 +2376,32 @@ def test_post_endpoint_single(
             actual_response = response.text
 
         if response.status_code in [400, 422]:
+            if not _has_nonempty_string_value(actual_response):
+                error_msg = (
+                    f"Got {response.status_code} for invalid input but the "
+                    "response body contains no descriptive error message. "
+                    "The server must return a human-readable explanation."
+                )
+                log_test_result(
+                    "POST",
+                    path,
+                    request_body,
+                    400,
+                    "400/422 with descriptive message",
+                    response.status_code,
+                    actual_response,
+                    False,
+                    error_msg,
+                    test_origin,
+                    documented_statuses=documented_statuses,
+                )
+                return False, error_msg
             log_test_result(
                 "POST",
                 path,
                 request_body,
                 400,
-                "400/422 (invalid enum value)",
+                "400/422 (invalid value)",
                 response.status_code,
                 actual_response,
                 True,
@@ -2281,9 +2412,9 @@ def test_post_endpoint_single(
             return True, None
         elif response.status_code >= 500:
             error_msg = (
-                f"Expected 400/422 for invalid enum value, got "
+                f"Expected 400/422 for invalid value, got "
                 f"{response.status_code} (server error). Server "
-                "should validate enum values and return 400 or "
+                "should validate input and return 400 or "
                 "422, not 5xx."
             )
             log_test_result(
@@ -2291,7 +2422,7 @@ def test_post_endpoint_single(
                 path,
                 request_body,
                 400,
-                "400/422 (invalid enum value)",
+                "400/422 (invalid value)",
                 response.status_code,
                 actual_response,
                 False,
@@ -2302,9 +2433,9 @@ def test_post_endpoint_single(
             return False, error_msg
         else:
             error_msg = (
-                f"Expected 400 or 422 for invalid enum value, got "
+                f"Expected 400 or 422 for invalid value, got "
                 f"{response.status_code}. Server should validate "
-                "enum values and return 400 Bad Request or "
+                "input and return 400 Bad Request or "
                 "422 Unprocessable Entity."
             )
             log_test_result(
@@ -2312,58 +2443,9 @@ def test_post_endpoint_single(
                 path,
                 request_body,
                 400,
-                "400 Bad Request (invalid enum value)",
+                "400 Bad Request (invalid value)",
                 response.status_code,
                 actual_response,
-                False,
-                error_msg,
-                test_origin,
-                documented_statuses=documented_statuses,
-            )
-            return False, error_msg
-
-    # Check if response is a streaming response
-    content_type = response.headers.get("Content-Type", "")
-    is_streaming = any(
-        stream_type in content_type.lower()
-        for stream_type in [
-            "text/event-stream",
-            "application/x-ndjson",
-            "application/stream+json",
-        ]
-    )
-
-    if is_streaming:
-        # Streaming responses are valid - we can't validate their
-        # content in the same way. Just verify we got a 200/201/202.
-        if response.status_code in [200, 201, 202]:
-            log_test_result(
-                "POST",
-                path,
-                request_body,
-                expected_status,
-                expected_response,
-                response.status_code,
-                collect_streaming_response(response),
-                True,
-                None,
-                test_origin,
-                documented_statuses=documented_statuses,
-            )
-            return True, None
-        else:
-            error_msg = (
-                f"Expected {expected_status}, got "
-                f"{response.status_code} for streaming response"
-            )
-            log_test_result(
-                "POST",
-                path,
-                request_body,
-                expected_status,
-                expected_response,
-                response.status_code,
-                collect_streaming_response(response),
                 False,
                 error_msg,
                 test_origin,

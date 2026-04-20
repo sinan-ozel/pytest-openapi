@@ -5,10 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.1]
 
 ### Added
 - Retry logic for fetching `/openapi.json`: the plugin now retries up to 3 times (4 total attempts) before failing, with a warning printed on each failed attempt.
+- **Format-based negative test generation** for string fields annotated with
+  `format: email`, `uri`, `ipv4`, `ipv6`, `hostname`, `idn-hostname`, or
+  `uuid`. When the OpenAPI spec documents a `400` response for an endpoint,
+  the plugin automatically generates one request body per required
+  format-constrained field that contains a deliberately invalid value. The
+  server is expected to return 400 or 422; the plugin additionally requires
+  the response body to contain at least one non-whitespace string (a
+  human-readable error message) — an empty `{}` body causes the test to fail.
+- Eight new mock servers and corresponding integration tests covering all
+  supported formats plus URL port-range edge cases (port 0 and ports > 65535
+  are invalid; ports 1–65535 are valid).
+- OpenAPI compatibility table added to `README.md` showing 3.0.x vs 3.1.x
+  feature support (as of v0.3.0).
+- Format validation documented in `docs/how-it-works/test-cases.md`.
 
 ## [0.3.0] - 2026-03-26
 

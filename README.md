@@ -136,6 +136,7 @@ Each OpenAPI test appears as an individual pytest test item.
 ✔️ Compares live responses against examples
 ✔️ Produces a readable test report
 ✔️ Supports OpenAPI 3.0 and **3.1.x** (nullable types, `const`, `$ref` siblings, `allOf`)
+✔️ Generates **format-based negative tests** for `email`, `uri`, `ipv4`, `ipv6`, `hostname`, `uuid` fields — expects 400/422 with a descriptive error message
 
 
 # ▶️ Detailed Example
@@ -218,12 +219,52 @@ See here an example server - `email-server`: [tests/test_servers/email_server/se
 
 [tests/test_servers/email_server/email_test_output.txt](tests/test_servers/email_server/email_test_output.txt)
 
+## Format-Based Negative Test Generation
+
+When a string property in an OpenAPI request body declares a `format`, pytest-openapi automatically generates an invalid value and sends it to the server. The server **must** return 400 or 422 **and** include a human-readable error message in the body (an empty `{}` body causes the test to fail).
+
+| Format | Tested? | Example invalid value |
+|---|---|---|
+| `email` | ✔️ | `not-an-email` |
+| `uri` / `url` | ✔️ | `not-a-uri` |
+| `ipv4` / `ip` | ✔️ | `999.999.999.999` |
+| `ipv6` | ✔️ | `gggg::1` |
+| `hostname` / `idn-hostname` | ✔️ | `-invalid.start.com` |
+| `uuid` | ✔️ | `not-a-uuid` |
+| `date` / `date-time` / `time` | ❌ (out of scope) | — |
+
+## OpenAPI Version Compatibility
+
+As of **v0.3.0**, pytest-openapi supports both OpenAPI 3.0.x and OpenAPI 3.1.x.
+
+|pytest-openapi|OpenAPI|
+|--------------|-------|
+|0.3.x         |3.0.x  |
+|0.3.x         |3.1.x  |
+
+The plan is to keep this backwards compatible for now.
+
+
+Here is a detailed breakdown.
+
+| Feature | OpenAPI 3.0.x | OpenAPI 3.1.x |
+|---|---|---|
+| Basic types (`string`, `integer`, `boolean`, `array`, `object`) | ✔️ | ✔️ |
+| `nullable: true` | ✔️ | ✔️ (via `type: ["string", "null"]`) |
+| `type: ["string", "null"]` array syntax | ❌ | ✔️ |
+| `$ref` resolution (`components/schemas`) | ✔️ | ✔️ |
+| `$ref` siblings (keywords next to `$ref`) | ❌ | ✔️ |
+| `allOf` composition | ✔️ | ✔️ |
+| `oneOf` / `anyOf` | ✔️ | ✔️ |
+| `const` keyword | ✔️ | ✔️ |
+| `enum` validation & negative tests | ✔️ | ✔️ |
+| Format-based negative tests (`email`, `uri`, …) | ✔️ | ✔️ |
+
 # Future Plans / TODO
 
 This is a work in progress.
 - [ ] A check that the example matches the schema
 - [ ] Ask that 400 responses be in the documentation.
-- [ ] A check for regexp and email formats.
 
 ## Issues? Feedback?
 

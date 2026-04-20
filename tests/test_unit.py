@@ -583,3 +583,119 @@ def test_post_endpoint_single_no_202_example_fails():
 
     assert not success
     assert "200/201/202" in error
+
+
+# ---------------------------------------------------------------------------
+# email format validation tests
+# ---------------------------------------------------------------------------
+
+KNOWN_VALID_EMAILS = [
+    "alice@example.com",
+    "sinan+tester@ozel.com",
+    "user+tag@subdomain.example.co.uk",
+    "test.user@example.com",
+]
+
+KNOWN_INVALID_EMAILS = [
+    "sinan,ozel @somehere",   # comma, space — the user's own example
+    "not-an-email",           # no @ sign
+    "@nodomain",              # missing local part
+    "noatsign.com",           # no @ at all
+    "double@@at.com",         # two @ signs
+    "spaces in@email.com",    # space in local part
+    "missing.tld@",           # no domain after @
+]
+
+
+def test_email_format_generates_valid_addresses():
+    """generate_string_test_cases for format: email produces at least one valid address."""
+    from pytest_openapi.case_generator import generate_string_test_cases
+
+    schema = {"type": "string", "format": "email"}
+    test_cases = generate_string_test_cases(schema)
+
+    assert len(test_cases) > 0, "Expected at least one email test case"
+    for case in test_cases:
+        assert "@" in case, f"Expected all generated values to look like emails, got: {case!r}"
+
+
+def test_email_format_generates_invalid_addresses():
+    """generate_string_test_cases for format: email produces at least one invalid address.
+
+    The plugin must probe servers that declare format: email by also sending
+    syntactically broken addresses.  Servers that validate properly should
+    return 400; the plugin treats that 400 as a passing contract test.
+    """
+    from pytest_openapi.case_generator import generate_string_test_cases
+
+    schema = {"type": "string", "format": "email"}
+    test_cases = generate_string_test_cases(schema)
+
+    # There must be at least one invalid email among the generated cases
+    # (i.e. something that does NOT conform to a basic user@domain.tld shape)
+    import re
+    basic_email_re = re.compile(r"^[^@\s,]+@[^@\s,]+\.[^@\s,]+$")
+    invalid_cases = [tc for tc in test_cases if not basic_email_re.match(tc)]
+    assert len(invalid_cases) >= 1, (
+        f"Expected at least one invalid email test case to be generated, "
+        f"but all {len(test_cases)} cases look valid: {test_cases}"
+    )
+
+
+def test_email_format_invalid_cases_are_recognisably_broken():
+    """The generated invalid email values must be clearly malformed.
+
+    We verify that at least one of our documented broken patterns is
+    produced (no @ sign, spaces, commas, etc.).
+    """
+    from pytest_openapi.case_generator import generate_string_test_cases
+
+    schema = {"type": "string", "format": "email"}
+    test_cases = generate_string_test_cases(schema)
+
+    broken_indicators = [" ", ",", "@@", "@."]
+    found_broken = any(
+        "@" not in tc or any(ind in tc for ind in broken_indicators)
+        for tc in test_cases
+    )
+    assert found_broken, (
+        f"Expected at least one clearly malformed email in generated cases, "
+        f"got: {test_cases}"
+    )
+
+
+def test_full_object_schema_with_email_format_generates_invalid_email():
+    """When an object schema contains a format: email field, generated test cases
+    include at least one object where the email field is invalid.
+
+    This mirrors what the plugin does for request bodies: it calls
+    generate_test_cases_for_schema on the full request schema and forwards
+    each generated object to the server.
+    """
+    from pytest_openapi.case_generator import generate_test_cases_for_schema
+
+    schema = {
+        "type": "object",
+        "required": ["name", "email", "message"],
+        "properties": {
+            "name": {"type": "string"},
+            "email": {"type": "string", "format": "email"},
+            "message": {"type": "string"},
+        },
+    }
+    test_cases, _ = generate_test_cases_for_schema(schema)
+
+    assert len(test_cases) > 0, "Expected at least one object test case"
+
+    import re
+    basic_email_re = re.compile(r"^[^@\s,]+@[^@\s,]+\.[^@\s,]+$")
+    invalid_email_objects = [
+        tc for tc in test_cases
+        if isinstance(tc, dict)
+        and "email" in tc
+        and not basic_email_re.match(str(tc["email"]))
+    ]
+    assert len(invalid_email_objects) >= 1, (
+        f"Expected at least one generated object with an invalid email, "
+        f"but all email values look valid: {[tc.get('email') for tc in test_cases if isinstance(tc, dict)]}"
+    )
