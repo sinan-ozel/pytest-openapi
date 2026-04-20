@@ -19,7 +19,10 @@ def openapi():
     return jsonify(
         {
             "openapi": "3.0.0",
-            "info": {"title": "Contact API (no error messages)", "version": "1.0.0"},
+            "info": {
+                "title": "Contact API (no error messages)",
+                "version": "1.0.0",
+            },
             "paths": {
                 "/contact": {
                     "post": {
@@ -68,16 +71,17 @@ def openapi():
                                                 },
                                             },
                                         },
-                                        "example": {"id": 1, "status": "received"},
+                                        "example": {
+                                            "id": 1,
+                                            "status": "received",
+                                        },
                                     }
                                 },
                             },
                             "400": {
                                 "description": "Bad request",
                                 "content": {
-                                    "application/json": {
-                                        "example": {}
-                                    }
+                                    "application/json": {"example": {}}
                                 },
                             },
                         },

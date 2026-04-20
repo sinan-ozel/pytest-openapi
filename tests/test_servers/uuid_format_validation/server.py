@@ -77,7 +77,10 @@ def openapi():
                                                 },
                                             },
                                         },
-                                        "example": {"id": 1, "status": "linked"},
+                                        "example": {
+                                            "id": 1,
+                                            "status": "linked",
+                                        },
                                     }
                                 },
                             },
@@ -112,7 +115,13 @@ def link_resource():
     valid, reason = _is_valid_uuid(resource_id)
     if not valid:
         return (
-            jsonify({"error": "Invalid UUID format", "field": "resource_id", "detail": reason}),
+            jsonify(
+                {
+                    "error": "Invalid UUID format",
+                    "field": "resource_id",
+                    "detail": reason,
+                }
+            ),
             400,
         )
     result = {"id": _next_id, "status": "linked"}

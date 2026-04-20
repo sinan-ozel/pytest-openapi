@@ -25,14 +25,20 @@ def _validate_url_with_port(value):
     except Exception:
         return False, "URL could not be parsed"
     if not parsed.scheme or parsed.scheme not in _VALID_SCHEMES:
-        return False, f"URL scheme must be http or https, got '{parsed.scheme or '(none)'}'"
+        return (
+            False,
+            f"URL scheme must be http or https, got '{parsed.scheme or '(none)'}'",
+        )
     if not parsed.hostname:
         return False, "URL must include a hostname"
     if parsed.port is not None:
         if parsed.port == 0:
             return False, "Port 0 is reserved and not valid for HTTP URLs"
         if parsed.port > 65535:
-            return False, f"Port {parsed.port} exceeds the maximum valid port number (65535)"
+            return (
+                False,
+                f"Port {parsed.port} exceeds the maximum valid port number (65535)",
+            )
     return True, None
 
 
@@ -93,7 +99,10 @@ def openapi():
                                                 },
                                             },
                                         },
-                                        "example": {"id": 1, "status": "registered"},
+                                        "example": {
+                                            "id": 1,
+                                            "status": "registered",
+                                        },
                                     }
                                 },
                             },
@@ -128,11 +137,13 @@ def register_webhook():
     valid, reason = _validate_url_with_port(callback_url)
     if not valid:
         return (
-            jsonify({
-                "error": "Invalid URL or port number",
-                "field": "callback_url",
-                "detail": reason,
-            }),
+            jsonify(
+                {
+                    "error": "Invalid URL or port number",
+                    "field": "callback_url",
+                    "detail": reason,
+                }
+            ),
             400,
         )
     result = {"id": _next_id, "status": "registered"}

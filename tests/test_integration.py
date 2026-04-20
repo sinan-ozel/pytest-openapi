@@ -1703,7 +1703,10 @@ def test_email_format_valid_address_passes():
     The contact server documents 'email' field with format: email and validates
     it server-side. A valid address like alice@example.com should produce 200.
     """
-    print("\n🔍 Testing valid email address passes format validation...", flush=True)
+    print(
+        "\n🔍 Testing valid email address passes format validation...",
+        flush=True,
+    )
     time.sleep(0.5)
 
     result = subprocess.run(

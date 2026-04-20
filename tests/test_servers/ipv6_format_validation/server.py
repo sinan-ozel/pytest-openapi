@@ -75,7 +75,10 @@ def openapi():
                                                 },
                                             },
                                         },
-                                        "example": {"id": 1, "status": "allowed"},
+                                        "example": {
+                                            "id": 1,
+                                            "status": "allowed",
+                                        },
                                     }
                                 },
                             },
@@ -110,7 +113,13 @@ def add_allowlist_ipv6():
     valid, reason = _is_valid_ipv6(ipv6_address)
     if not valid:
         return (
-            jsonify({"error": "Invalid IPv6 address", "field": "ipv6_address", "detail": reason}),
+            jsonify(
+                {
+                    "error": "Invalid IPv6 address",
+                    "field": "ipv6_address",
+                    "detail": reason,
+                }
+            ),
             400,
         )
     result = {"id": _next_id, "status": "allowed"}

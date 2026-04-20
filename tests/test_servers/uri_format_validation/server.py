@@ -19,7 +19,10 @@ def _is_valid_uri(value):
     if not parsed.scheme:
         return False, "URI must include a scheme (e.g. https://)"
     if parsed.scheme not in _VALID_SCHEMES:
-        return False, f"URI scheme '{parsed.scheme}' is not supported; use one of {sorted(_VALID_SCHEMES)}"
+        return (
+            False,
+            f"URI scheme '{parsed.scheme}' is not supported; use one of {sorted(_VALID_SCHEMES)}",
+        )
     if not parsed.netloc:
         return False, "URI must include a host"
     return True, None
@@ -79,7 +82,10 @@ def openapi():
                                                 },
                                             },
                                         },
-                                        "example": {"id": 1, "status": "registered"},
+                                        "example": {
+                                            "id": 1,
+                                            "status": "registered",
+                                        },
                                     }
                                 },
                             },
@@ -114,7 +120,13 @@ def register_webhook():
     valid, reason = _is_valid_uri(callback_url)
     if not valid:
         return (
-            jsonify({"error": "Invalid URI format", "field": "callback_url", "detail": reason}),
+            jsonify(
+                {
+                    "error": "Invalid URI format",
+                    "field": "callback_url",
+                    "detail": reason,
+                }
+            ),
             400,
         )
     result = {"id": _next_id, "status": "registered"}

@@ -79,7 +79,10 @@ def openapi():
                                                 },
                                             },
                                         },
-                                        "example": {"id": 1, "status": "allowed"},
+                                        "example": {
+                                            "id": 1,
+                                            "status": "allowed",
+                                        },
                                     }
                                 },
                             },
@@ -114,7 +117,13 @@ def add_allowlist():
     valid, reason = _is_valid_ipv4(ip_address)
     if not valid:
         return (
-            jsonify({"error": "Invalid IPv4 address", "field": "ip_address", "detail": reason}),
+            jsonify(
+                {
+                    "error": "Invalid IPv4 address",
+                    "field": "ip_address",
+                    "detail": reason,
+                }
+            ),
             400,
         )
     result = {"id": _next_id, "status": "allowed"}

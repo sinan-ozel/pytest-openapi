@@ -30,7 +30,11 @@ def openapi():
                                 "application/json": {
                                     "schema": {
                                         "type": "object",
-                                        "required": ["name", "email", "message"],
+                                        "required": [
+                                            "name",
+                                            "email",
+                                            "message",
+                                        ],
                                         "properties": {
                                             "name": {
                                                 "type": "string",

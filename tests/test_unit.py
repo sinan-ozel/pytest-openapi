@@ -597,13 +597,13 @@ KNOWN_VALID_EMAILS = [
 ]
 
 KNOWN_INVALID_EMAILS = [
-    "sinan,ozel @somehere",   # comma, space — the user's own example
-    "not-an-email",           # no @ sign
-    "@nodomain",              # missing local part
-    "noatsign.com",           # no @ at all
-    "double@@at.com",         # two @ signs
-    "spaces in@email.com",    # space in local part
-    "missing.tld@",           # no domain after @
+    "sinan,ozel @somehere",  # comma, space — the user's own example
+    "not-an-email",  # no @ sign
+    "@nodomain",  # missing local part
+    "noatsign.com",  # no @ at all
+    "double@@at.com",  # two @ signs
+    "spaces in@email.com",  # space in local part
+    "missing.tld@",  # no domain after @
 ]
 
 
@@ -616,7 +616,9 @@ def test_email_format_generates_valid_addresses():
 
     assert len(test_cases) > 0, "Expected at least one email test case"
     for case in test_cases:
-        assert "@" in case, f"Expected all generated values to look like emails, got: {case!r}"
+        assert (
+            "@" in case
+        ), f"Expected all generated values to look like emails, got: {case!r}"
 
 
 def test_email_format_generates_invalid_addresses():
@@ -634,6 +636,7 @@ def test_email_format_generates_invalid_addresses():
     # There must be at least one invalid email among the generated cases
     # (i.e. something that does NOT conform to a basic user@domain.tld shape)
     import re
+
     basic_email_re = re.compile(r"^[^@\s,]+@[^@\s,]+\.[^@\s,]+$")
     invalid_cases = [tc for tc in test_cases if not basic_email_re.match(tc)]
     assert len(invalid_cases) >= 1, (
@@ -688,9 +691,11 @@ def test_full_object_schema_with_email_format_generates_invalid_email():
     assert len(test_cases) > 0, "Expected at least one object test case"
 
     import re
+
     basic_email_re = re.compile(r"^[^@\s,]+@[^@\s,]+\.[^@\s,]+$")
     invalid_email_objects = [
-        tc for tc in test_cases
+        tc
+        for tc in test_cases
         if isinstance(tc, dict)
         and "email" in tc
         and not basic_email_re.match(str(tc["email"]))
