@@ -5,7 +5,10 @@ import re
 
 import requests
 
-from .case_generator import _INVALID_FORMAT_VALUES, generate_test_cases_for_schema
+from .case_generator import (
+    _INVALID_FORMAT_VALUES,
+    generate_test_cases_for_schema,
+)
 from .schema import primary_type, resolve_schema
 
 # Global list to store test reports
@@ -387,7 +390,8 @@ def contains_invalid_enum_value(schema, data, path="", spec=None):
 
 
 def _has_nonempty_string_value(data):
-    """Return True if data contains at least one non-whitespace string."""
+    """Return True if data contains at least one non-whitespace
+    string."""
     if isinstance(data, str):
         return bool(data.strip())
     if isinstance(data, dict):
@@ -398,7 +402,8 @@ def _has_nonempty_string_value(data):
 
 
 def contains_invalid_format_value(schema, data, path="", spec=None):
-    """Check if data contains any invalid format values according to schema.
+    """Check if data contains any invalid format values according to
+    schema.
 
     Walks the schema/data tree and returns True when a string field annotated
     with a known format (email, uri, ipv4, ipv6, hostname, uuid, …) holds one

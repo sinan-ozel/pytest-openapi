@@ -6,10 +6,11 @@ from itertools import product
 from .schema import primary_type, resolve_schema
 
 _INVALID_FORMAT_VALUES = {
-    "email": ["user name@domain.com",
-              "user@@double.com",
-              "user;name@domain.com"
-             ],
+    "email": [
+        "user name@domain.com",
+        "user@@double.com",
+        "user;name@domain.com",
+    ],
     "uri": ["not-a-uri", "://missing-host"],
     "url": ["not-a-url", "://missing-host"],
     "ipv4": ["999.999.999.999", "1.2.3"],
