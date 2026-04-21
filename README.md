@@ -129,13 +129,21 @@ Type mismatch for key 'subject': expected str, got int. Expected value: Hello, A
 Each OpenAPI test appears as an individual pytest test item.
 
 ✔️ Validates OpenAPI request/response definitions
+
 ✔️ Enforces schema field descriptions
+
 ✔️ Generates test cases from schemas, checks response codes and types in the response
+
 ✔️ Tests the examples
+
 ✔️ Tests **GET / POST / PUT / DELETE** endpoints
+
 ✔️ Compares live responses against examples
+
 ✔️ Produces a readable test report
+
 ✔️ Supports OpenAPI 3.0 and **3.1.x** (nullable types, `const`, `$ref` siblings, `allOf`)
+
 ✔️ Generates **format-based negative tests** for `email`, `uri`, `ipv4`, `ipv6`, `hostname`, `uuid` fields — expects 400/422 with a descriptive error message
 
 
